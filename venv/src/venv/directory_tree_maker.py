@@ -1,7 +1,7 @@
 import os
 import json
 
-def directory_search(path, saved_file_paths):
+def directory_search(path, saved_file_paths): #Обход директории для сохранения путей
     for next_file in os.listdir(path):
         next_path = path + '/' + next_file
         if os.path.isdir(next_path):
@@ -11,7 +11,7 @@ def directory_search(path, saved_file_paths):
             
     return saved_file_paths
 
-def push_new_file(old_path, new_path):
+def push_new_file(old_path, new_path): #Перемещение файла + создание новых папок
     folders = new_path.split('/')
     currect_path = folders[0]
     for next_folder in folders[1:]:
@@ -20,7 +20,7 @@ def push_new_file(old_path, new_path):
         currect_path += '/' + next_folder
     os.replace(old_path, new_path)
 
-def move_files_into_root(main_root, path):
+def move_files_into_root(main_root, path): #Перемещение всех файлов в корень
     for next_file in os.listdir(path):
         next_path = path + '/' + next_file
         if os.path.isdir(next_path):
@@ -28,7 +28,7 @@ def move_files_into_root(main_root, path):
         else:
             os.replace(next_path, main_root + '/' + next_file)
 
-def clear(path):
+def clear(path): #Удаление пустых папок
     for next_file in os.listdir(path):
         next_path = path + '/' + next_file
         if os.path.isdir(next_path):
@@ -36,7 +36,7 @@ def clear(path):
     if len(os.listdir(path)) == 0:
         os.rmdir(path)
                 
-def directory_tree_maker_manager(main_root, new_paths, programm_path):
+def directory_tree_maker_manager(main_root, new_paths, programm_path): #main_root - строка, new_paths - список пар, programm_path - строка
     saved_file_paths = []
     saved_file_paths = directory_search(main_root, [])
     
@@ -52,7 +52,7 @@ def directory_tree_maker_manager(main_root, new_paths, programm_path):
 
     clear(main_root)
     
-def rollback(main_root, programm_path):
+def rollback(main_root, programm_path): #откат
     with open(programm_path + "/saved_paths.json", "r") as json_data:
         data = json.load(json_data)
     json_data.close()
