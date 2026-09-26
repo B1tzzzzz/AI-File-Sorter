@@ -47,7 +47,8 @@ def directory_tree_maker_manager(main_root, new_paths, programm_path):
     json_data.close()
     
     for paths_pair in new_paths:
-        push_new_file(paths_pair[0], paths_pair[1])
+        if os.path.exists(paths_pair[0]):
+            push_new_file(paths_pair[0], paths_pair[1])
 
     clear(main_root)
     
@@ -60,9 +61,10 @@ def rollback(main_root, programm_path):
     move_files_into_root(main_root, main_root)
     
     for path in saved_file_paths:
-        push_new_file(main_root + '/' + path.split('/')[-1], path)
+        if os.path.exists(main_root + '/' + path.split('/')[-1]):
+            push_new_file(main_root + '/' + path.split('/')[-1], path)
     
     clear(main_root)
     
-directory_tree_maker_manager("C:/Users/MSI/Downloads/gg2", [["C:/Users/MSI/Downloads/gg2/vf.txt", "C:/Users/MSI/Downloads/gg2/new/vf.txt"]], "C:/Users/MSI/Downloads/project_shlak")
-rollback("C:/Users/MSI/Downloads/gg2", "C:/Users/MSI/Downloads/project_shlak")
+#directory_tree_maker_manager("C:/Users/MSI/Downloads/gg2", [["C:/Users/MSI/Downloads/gg2/vf.txt", "C:/Users/MSI/Downloads/gg2/new/vf.txt"]], "C:/Users/MSI/Downloads/project_shlak")
+#rollback("C:/Users/MSI/Downloads/gg2", "C:/Users/MSI/Downloads/project_shlak")
