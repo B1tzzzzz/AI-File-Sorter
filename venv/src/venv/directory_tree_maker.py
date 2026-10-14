@@ -37,7 +37,6 @@ def clear(path): #Удаление пустых папок
         os.rmdir(path)
                 
 def directory_tree_maker_manager(main_root, new_paths, programm_path): #main_root - строка, new_paths - список пар, programm_path - строка
-    saved_file_paths = []
     saved_file_paths = directory_search(main_root, [])
     
     data = {}
