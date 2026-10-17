@@ -37,7 +37,7 @@ SYSTEM_PROMPT = (
     "Examples:\n"
     "- For a C++ file with Aho-Corasick: c++, aho–corasick algorithm, string algorithm, trie, olympics\n"
     "- For a C++ file with 3D prefix sums/Fenwick: c++, 3d fenwick, fenwick tree, array algorithm, data structures, olympics\n"
-    "- For a Python sorting script: python, sorting algorithm, array algorithm, bubble sort"
+    "- For a Python sorting script: python, sorting algorithm, array algorithm, sort"
 )
 
 def detect_language(file_path: str) -> str:
@@ -111,7 +111,7 @@ def main():
     
     language = detect_language(file_path)
     if language is None:
-        ext = os.path.splitext(file_path)[1].lower()
+        ext = os.path.splittext(file_path)[1].lower()
         print(f"\n Unsupported file extension: '{ext}'")
         print(f"    Supported: {', '.join(SUPPORTED_EXTENSIONS.keys())}")
         input("Press Enter to exit")
@@ -119,25 +119,24 @@ def main():
     
     print(f"\n Language: {language}")
     print("Reading file")
-    code_content = read_code_file(file_path)
+    code_content = read_code_file(file_path).strip()
     
     if code_content.startswith("ERROR"):
         print(f"\n {code_content}")
         input("Press Enter to exit")
         sys.exit(1)
     
-    if len(code_content.strip()) < 50:
+    if len(code_content) < 50:
         print("\n File too short for quality analysis (< 50 characters)")
         input("Press Enter to exit")
         sys.exit(1)
-    
-    lines = code_content.split('\n')
-    loc = len([l for l in lines if l.strip()])
-    
+
     if len(code_content) > 40000:
         print(f"\n File is very large ({loc} lines)")
     else:
         print(f" File read: {loc} lines of code, {len(code_content)} characters")
+    lines = code_content.split('\n')
+    loc = len([l for l in lines if l.strip()])
     
     print("[*] AI is identifying specific algorithms and structures")
     tags = analyze_code(code_content, language)
