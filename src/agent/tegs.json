@@ -1,7 +1,12 @@
 {
-  "file_name": "pr.c",
-  "language": "C",
-  "purpose": "Файл содержит реализацию алгоритма пузырьковой сортировки и демонстрационную программу для отображения отсортированного массива.",
-  "suggested_folder": "algorithms",
-  "summary": "Код реализует функцию bubble_sort для сортировки массива с помощью пузырькового алгоритма. В main функции создается массив, сортируется и выводится на экран."
+ "factorial_iter.c ":  "A C program that calculates the factorial of a number using a for loop, checking the input for non-negativity. ",
+ "lcm_calc.py ":  "A Python function that finds the least common multiple of two numbers using their relationship with the greatest common divisor. ",
+ "polygon_area.cpp ":  "C++ code that calculates the area of a convex polygon given its vertex coordinates, using Gauss's formula. ",
+ "is_power_of_two.c ":  "A C program that checks if an entered number is a power of two using the bitwise AND operation. ",
+ "roman_to_int.py ":  "A Python function that converts a string of Roman numerals into its corresponding decimal integer. ",
+ "matrix_mult.cpp ":  "A C++ program that multiplies two compatible matrices and outputs the resulting matrix to the screen. ",
+ "count_bits.c ":  "A C program that counts the number of set bits (ones) in the binary representation of an integer. ",
+ "anagram_check.py ":  "A Python script that determines if two entered strings are anagrams by comparing their sorted character versions. ",
+ "newton_sqrt.cpp ":  "C++ code that calculates the square root of a number using Newton's method with a specified epsilon precision. ",
+ "caesar_cipher.c ":  "A C program that encrypts a text string using the Caesar cipher by shifting each letter by a specified number of positions. "
 }

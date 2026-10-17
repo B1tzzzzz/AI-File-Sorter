@@ -1,1 +1,12 @@
-"{\n  \"pr.c\":\"Algorithms/\"\n}"
+{
+  "factorial_iter.c ": "Math/Programming/",
+  "lcm_calc.py ": "Math/Programming/",
+  "polygon_area.cpp ": "Math/Programming/",
+  "is_power_of_two.c ": "Math/Programming/",
+  "roman_to_int.py ": "Math/Programming/",
+  "matrix_mult.cpp ": "Math/Programming/",
+  "count_bits.c ": "Math/Programming/",
+  "anagram_check.py ": "Programming/",
+  "newton_sqrt.cpp ": "Math/Programming/",
+  "caesar_cipher.c ": "Programming/"
+}
