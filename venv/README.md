@@ -1,2 +1,0 @@
-# AI-File-Sorter!
-брух

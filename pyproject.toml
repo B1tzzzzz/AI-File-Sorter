@@ -1,18 +1,22 @@
 [project]
-name = "venv"
+name = "agent"
 version = "0.1.0"
-description = "Add your description here"
+description = "An AI agent that sorts files in a selected directory, built with LangGraph + ChatOllama (Qwen 2.5:7B)."
 readme = "README.md"
 authors = [
     { name = "B1tzzzzz", email = "matew651@gmail.com" }
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "dotenv>=0.9.9",
     "langchain>=1.4.2",
     "langchain-ollama>=1.1.0",
     "langgraph>=1.2.12",
+    "langgraph-api>=0.16.1",
     "langgraph-checkpoint-sqlite>=3.1.1",
     "langgraph-supervisor>=0.0.31",
+    "colorama; sys_platform == 'win32'",
+    "langgraph-cli[inmem]>=0.4.36",
 ]
 
 [project.scripts]
