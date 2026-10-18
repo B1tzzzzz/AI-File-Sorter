@@ -28,18 +28,18 @@ def prepare_image_for_vlm(file_path: str, max_size: tuple = (1024, 1024)) -> str
             img.save(temp_file.name, format=img_format.upper() if img_format != 'jpg' else 'JPEG')
             return temp_file.name
     except Exception as e:
-        print(f"[Предупреждение] Не удалось уменьшить изображение: {e}")
+        print(f"[Warning] Failed to resize image: {e}")
         return file_path
 
 
 def analyze_image_node(state: AgentState):
-    print(f"[Node: Analyze] Анализирую {state['filename']}...")
+    print(f"[Node: Analyze] Analyzing {state['filename']}...")
 
     prompt = f"""
-    Проанализируй изображение. Верни ответ СТРОГО в формате JSON.
-    Имя файла: {state['filename']}
-    Выдели 3-5 ключевых тегов на русском языке.
-    Пример ответа: {{"filename": "{state['filename']}", "tags": ["сова", "природа"]}}
+    Analyze the image. Return the answer STRICTLY in JSON format.
+    Filename: {state['filename']}
+    Extract 3-5 key tags. ALL TAGS MUST BE IN ENGLISH.
+    Example: {{"filename": "{state['filename']}", "tags": ["owl", "nature", "bird"]}}
     """
 
     temp_image_path = prepare_image_for_vlm(state['file_path'])
@@ -53,17 +53,15 @@ def analyze_image_node(state: AgentState):
                 'images': [temp_image_path]
             }],
             format='json',
-            options={
-                "num_ctx": 8192
-            }
+            keep_alive="1h"
         )
         result_dict = json.loads(response['message']['content'])
-        clean_tags = [tag.strip() for tag in result_dict.get("tags", [])]
+        clean_tags = [tag.strip().lower() for tag in result_dict.get("tags", [])]
         return {"tags": clean_tags}
 
     except Exception as e:
-        print(f"Ошибка в узле для {state['filename']}: {e}")
-        return {"tags": ["ошибка"]}
+        print(f"Error in node for {state['filename']}: {e}")
+        return {"tags": ["error"]}
 
     finally:
         if temp_image_path != state['file_path'] and os.path.exists(temp_image_path):
@@ -78,7 +76,7 @@ image_agent_app = workflow.compile()
 
 
 def process_folder(folder_path: str):
-    final_result = []
+    final_result = {}
     valid_extensions = ('.jpg', '.jpeg', '.png', '.webp', '.bmp')
 
     files = os.listdir(folder_path)
@@ -95,16 +93,22 @@ def process_folder(folder_path: str):
 
             final_state = image_agent_app.invoke(initial_state)
 
-            final_result.append([final_state['filename'], final_state['tags']])
+            final_result[final_state['filename']] = final_state['tags']
 
-    return final_result
+    json_output = json.dumps(final_result, indent=4, ensure_ascii=False)
+
+    with open("results.json", "w", encoding="utf-8") as f:
+        f.write(json_output)
+
+    return json_output
 
 
 if __name__ == "__main__":
     test_folder = r"C:\Projects\ai-file-sorter\test_images"
 
-    print("Запускаю обработку папки через LangGraph...")
-    final_result = process_folder(test_folder)
+    print("Starting folder processing via LangGraph...")
+    final_json = process_folder(test_folder)
 
-    print("\n--- ИТОГОВЫЙ РЕЗУЛЬТАТ ДЛЯ СОРТИРОВЩИКА ---")
-    print(final_result)
+    print("\n--- FINAL JSON FOR ORCHESTRATOR ---")
+    print(final_json)
+    print("\n[Success] Result saved to results.json!")
