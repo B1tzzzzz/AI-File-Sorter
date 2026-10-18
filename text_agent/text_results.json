@@ -1,0 +1,22 @@
+{
+    "asimov_robot.txt": [
+        "science fiction",
+        "robots",
+        "laws of robotics"
+    ],
+    "burmalda.csv": [
+        "gaming",
+        "esports",
+        "team"
+    ],
+    "meeting_notes.md": [
+        "meeting",
+        "agenda",
+        "action_items"
+    ],
+    "shakespeare_hamlet.txt": [
+        "literature",
+        "play",
+        "philosophy"
+    ]
+}
