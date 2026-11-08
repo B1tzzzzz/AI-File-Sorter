@@ -104,7 +104,7 @@ def process_folder(folder_path: str):
 
 
 if __name__ == "__main__":
-    test_folder = r"C:\Projects\ai-file-sorter\test_images"
+    test_folder = r"C:\Users\Матвей\Documents\GitHub\AI-File-Sorter\src\agent\image_agent\test_images"
 
     print("Starting folder processing via LangGraph...")
     final_json = process_folder(test_folder)

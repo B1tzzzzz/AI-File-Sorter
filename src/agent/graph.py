@@ -21,17 +21,11 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
 
-# ---------------------------------------------------------------------------
-# Environment
-# ---------------------------------------------------------------------------
 load_dotenv()                         # reads .env if present
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL    = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
 
-# ---------------------------------------------------------------------------
-# System prompt – this is the *entire* behaviour spec of the agent.
-# ---------------------------------------------------------------------------
 SYSTEM_PROMPT = """\
 You are an AI agent that can sort files in the selected directory.
 

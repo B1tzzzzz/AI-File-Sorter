@@ -1,0 +1,24 @@
+С чего начать
+Хотелось бы избежать талмуда на главной странице. Поэтому начнем со способа запуска nfqws2 и описания способов портирования стратегий nfqws1 - как в nfqws2 сделать то же самое, что можно было в nfqws1. Когда вы поймете как это работает, вы можете посмотреть Lua код, находящийся "под капотом". Разобрать как он работает, попробовать написать что-то свое, руководствуясь талмудом как справочником.
+
+Механика обработки трафика
+Изначально сетевой трафик в любой ОС появляется в ядре. Первая задача - извлечь его оттуда и перенаправить на процесс nfqws2. Эта задача решается в Linux с помощью iptables и nftables, в BSD - ipfw и pf, в Windows - windivert. Процесс перенаправления трафика из ядра отнимает достаточно много ресурсов, поэтому лучше всего отфильтровать как можно больше прямо в нем.
+
+Для экспериментов на Linux можно начать со следующих nftables, которые перенаправят начальные пакеты соединений на порты tcp 80,443 и udp 443 в очередь NFQUEUE с номером 200.
+
+nft delete table inet ztest
+nft create table inet ztest
+nft add chain inet ztest post "{type filter hook postrouting priority 101;}"
+nft add rule inet ztest post meta mark and 0x40000000 == 0 tcp dport "{80,443}" ct original packets 1-12 queue num 200 bypass
+nft add rule inet ztest post meta mark and 0x40000000 == 0 udp dport "{443}" ct original packets 1-12 queue num 200 bypass
+
+sysctl net.netfilter.nf_conntrack_tcp_be_liberal=1 
+nft add chain inet ztest pre "{type filter hook prerouting priority -101;}"
+nft add rule inet ztest pre meta mark and 0x40000000 == 0 tcp sport "{80,443}" ct reply packets 1-12 queue num 200 bypass
+nft add rule inet ztest pre meta mark and 0x40000000 == 0 udp sport "{443}" ct reply packets 1-12 queue num 200 bypass
+
+nft add chain inet ztest predefrag "{type filter hook output priority -401;}"
+nft add rule inet ztest predefrag "mark & 0x40000000 != 0x00000000 notrack"
+В windows функция перехвата вшита прямо в код движка для windows, который называется winws2. Он использует драйвер windivert. Для перехвата портов целиком используются параметры --wf-tcp-in, --wf-tcp-out, --wf-udp-in, --wf-udp-out. Они относятся к протоколам tcp или udp, к входящим или исходящим пакетам. Например, --wf-tcp-out=80,443. Для более точного перехвата пишутся фильтры на языке фильтров windivert. Он похож на язык фильтров tcpdump или wireshark. Фильтры отдаются winws2 в параметрах --wf-raw-part. Конструктор фильтров обьединяет все указанные опции перехвата в единый raw фильтр и запускает перехват windivert.
+
+К сожалению, самый болезненный недостаток windivert (а так же BSD ipfw и pf) - отсутствие ограничителя на номер пакета в соединении (connbytes в iptables, ct packets в nftables). windivert вообще не отслеживает соединения. Поэтому если перехватывать порт целиком, то все соединение по указанному направлению пойдет на перехват, что нелегко для процессора, если там передаются многие мегабайты. Поэтому по возможности пишите собственные фильтры windivert, проверяющие тип пейлоада хотя бы частично. Дофильтрацию может выполнить winws2.

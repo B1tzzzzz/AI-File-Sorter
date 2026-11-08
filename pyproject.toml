@@ -17,6 +17,7 @@ dependencies = [
     "langgraph-supervisor>=0.0.31",
     "colorama; sys_platform == 'win32'",
     "langgraph-cli[inmem]>=0.4.36",
+    "pillow>=13.0.0",
 ]
 
 [project.scripts]
