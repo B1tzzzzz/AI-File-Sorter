@@ -71,7 +71,7 @@ def analyze_code(file_content: str, language: str) -> str:
         raw_answer = response['message']['content']
         
         tags = raw_answer.strip().lower()
-        tags = re.sub(r'[^a-z0-9,\s\-–]', '', tags)
+        tags = re.sub(r'[^a-z0-9,\s\-–+]', '', tags)
         tags = re.sub(r'\s*,\s*', ', ', tags)
         tags = re.sub(r'\s+', ' ', tags).strip()
         tags = tags.strip(', ')
@@ -102,7 +102,7 @@ def main():
     file_path = input("Enter path to code file (.py, .c, .cpp, .h, etc.): ").strip().strip('"').strip("'")
     
     if not os.path.exists(file_path):
-        print("\n File not found. Check the path.")
+        print("\n File not found")
         input("Press Enter to exit")
         sys.exit(1)
     
@@ -118,7 +118,6 @@ def main():
         sys.exit(1)
     
     print(f"\n Language: {language}")
-    print("Reading file")
     code_content = read_code_file(file_path).strip()
     
     if code_content.startswith("ERROR"):
@@ -138,8 +137,7 @@ def main():
         print(f"\n File is very large ({loc} lines)")
     else:
         print(f" File read: {loc} lines of code, {len(code_content)} characters")
-    
-    print("[*] AI is identifying specific algorithms and structures")
+        
     tags = analyze_code(code_content, language)
     
     if tags.startswith("Error"):
