@@ -1,0 +1,102 @@
+{
+    "asimov_robot.txt": [
+        "science fiction",
+        "robots",
+        "laws of robotics"
+    ],
+    "burmalda.csv": [
+        "gaming",
+        "esports",
+        "team"
+    ],
+    "meeting_notes.md": [
+        "meeting",
+        "agenda",
+        "action_items"
+    ],
+    "shakespeare_hamlet.txt": [
+        "literature",
+        "play",
+        "drama"
+    ],
+    "text copy 16.txt": [
+        "opinion",
+        "food",
+        "cultural"
+    ],
+    "text copy 17.txt": [
+        "algorithm",
+        "data structure",
+        "computer science"
+    ],
+    "text copy 18.txt": [
+        "algorithm",
+        "data structure",
+        "computer science"
+    ],
+    "text copy 19.txt": [
+        "algorithm",
+        "minimization",
+        "function"
+    ],
+    "text copy 20.txt": [
+        "network",
+        "traffic",
+        "routing"
+    ],
+    "text copy 21.txt": [
+        "network",
+        "security",
+        "programming"
+    ],
+    "text copy 22.txt": [
+        "strategy",
+        "automation",
+        "testing"
+    ],
+    "text copy 23.txt": [
+        "security",
+        "network",
+        "instructions"
+    ],
+    "text copy 24.txt": [
+        "landscape",
+        "description",
+        "fiction"
+    ],
+    "text copy 25.txt": [
+        "fiction",
+        "russian literature",
+        "novel"
+    ],
+    "text copy 26.txt": [
+        "novel",
+        "literature",
+        "description"
+    ],
+    "text copy 27.txt": [
+        "novel",
+        "drama",
+        "literature"
+    ],
+    "text copy 28.txt": [
+        "city",
+        "waterways",
+        "navigation"
+    ],
+    "text copy 29.txt": [
+        "population",
+        "city",
+        "tourism"
+    ],
+    "text copy.txt": [
+        "city",
+        "history",
+        "administration"
+    ],
+    "text.txt": [
+        "travel",
+        "vacation",
+        "sightseeing"
+    ]
+}

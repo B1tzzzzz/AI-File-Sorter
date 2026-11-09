@@ -89,7 +89,7 @@ def process_text_folder(folder_path: str):
 
 
 if __name__ == "__main__":
-    test_folder = r"C:\Projects\ai-file-sorter\test_texts"
+    test_folder = r"C:\Users\Матвей\Documents\GitHub\AI-File-Sorter\text_agent\test_texts"
 
     if not os.path.exists(test_folder):
         os.makedirs(test_folder)

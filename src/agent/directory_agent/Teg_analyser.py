@@ -1,8 +1,7 @@
 from ollama import chat
 import json
 from pathlib import Path
-
-
+# img 0:15 1.10 mb txt 0:15 53.7 kb dir 0:17 55 files
 def Teg_analyse(programm_path):
     base = Path(programm_path)
 
@@ -37,4 +36,4 @@ def Teg_analyse(programm_path):
     print(json.dumps(roots, ensure_ascii=False, indent=2))
 
 
-Teg_analyse("C:/Users/MSI/Documents/GitHub/AI-File-Sorter/venv/src/venv")
+Teg_analyse(r"C:\Users\Матвей\Documents\GitHub\AI-File-Sorter\src\agent\directory_agent")
