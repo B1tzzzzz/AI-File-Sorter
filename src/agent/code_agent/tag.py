@@ -147,11 +147,6 @@ def main():
         file_name = os.path.basename(file_path)
         print(f"\n[{i}/{len(files)}] Processing: {file_name}")
         
-        if file_name in index_data:
-            print(f"  [skip] Already in index")
-            skipped_count += 1
-            continue
-        
         language = detect_language(file_path)
         if language is None:
             print(f"  [skip] Unsupported extension")
@@ -196,9 +191,6 @@ def main():
     print("\n" + "="*60)
     print(f"  Total files found : {len(files)}")
     print(f"  Processed         : {processed_count}")
-    print(f"  Skipped           : {skipped_count}")
-    print(f"  Errors            : {error_count}")
-    print(f"  Total in index    : {len(index_data)}")
     print(f"  Index saved to    : {os.path.join(directory, INDEX_FILE_NAME)}")
     input("\n Press Enter to exit")
 
