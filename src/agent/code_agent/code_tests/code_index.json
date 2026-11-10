@@ -1,0 +1,345 @@
+{
+  "1 copy.c": [
+    "c",
+    "array algorithm",
+    "sorting algorithm",
+    "data structures",
+    "memory management",
+    "inputoutput operations"
+  ],
+  "1.c": [
+    "c",
+    "array algorithm",
+    "sorting algorithm",
+    "quick select",
+    "data structures",
+    "integer input validation",
+    "memory allocation",
+    "integer array manipulation"
+  ],
+  "1_2_10.c": [
+    "c",
+    "input processing",
+    "array algorithm",
+    "math",
+    "number theory",
+    "io operations"
+  ],
+  "1_2_16.c": [
+    "c",
+    "number theory",
+    "array algorithm",
+    "inputoutput operations",
+    "integer division",
+    "sport programming"
+  ],
+  "1_2_23.c": [
+    "c",
+    "math",
+    "array algorithm",
+    "floating point comparison",
+    "input validation",
+    "numerical stability"
+  ],
+  "1_2_24.c": [
+    "c",
+    "array algorithm",
+    "math",
+    "input processing",
+    "sport programming"
+  ],
+  "1_2_25.c": [
+    "c",
+    "reading algorithm",
+    "array algorithm",
+    "input handling",
+    "searching algorithm"
+  ],
+  "1_2_26.c": [
+    "c",
+    "array algorithm",
+    "sorting algorithm",
+    "math",
+    "inputoutput operations"
+  ],
+  "1_2_27.c": [
+    "c",
+    "array algorithm",
+    "sorting algorithm",
+    "math",
+    "sport programming"
+  ],
+  "1_2_35.c": [
+    "c",
+    "math",
+    "number theory",
+    "array algorithm",
+    "sorting algorithm",
+    "floating point comparison"
+  ],
+  "1_2_4.c": [
+    "c",
+    "input handling",
+    "array algorithm",
+    "floating point",
+    "arithmetic",
+    "statistics",
+    "io operations"
+  ],
+  "1_2_5.c": [
+    "c",
+    "math",
+    "statistics",
+    "array algorithm"
+  ],
+  "2 copy.c": [
+    "c",
+    "array algorithm",
+    "sorting algorithm",
+    "data structures",
+    "shift operation",
+    "input validation",
+    "memory management",
+    "integer operations"
+  ],
+  "2.c": [
+    "c",
+    "merge sort",
+    "array algorithm",
+    "sorting algorithm",
+    "counting inversions"
+  ],
+  "3.c": [
+    "c",
+    "array algorithm",
+    "sorting algorithm",
+    "data structures",
+    "pseudo sorting"
+  ],
+  "a.cpp": [
+    "c++",
+    "graph theory",
+    "dfs",
+    "undirected graph",
+    "connected components",
+    "data structures",
+    "algorithm",
+    "sport programming"
+  ],
+  "avl_tree.c": [
+    "c",
+    "avl tree",
+    "balancing algorithm",
+    "binary search tree",
+    "data structures",
+    "tree algorithm"
+  ],
+  "binpow.c": [
+    "c",
+    "binaryexponentiation",
+    "math",
+    "inputvalidation",
+    "commandlinearguments",
+    "arithmeticoperations"
+  ],
+  "checker.py": [
+    "python",
+    "subprocess",
+    "random",
+    "file io",
+    "comparison",
+    "testing",
+    "sport programming"
+  ],
+  "checker2.py": [
+    "python",
+    "subprocess",
+    "random",
+    "numba",
+    "file io",
+    "testing",
+    "array algorithm"
+  ],
+  "checker3.py": [
+    "python",
+    "file-i-o",
+    "random",
+    "array algorithm",
+    "graph theory",
+    "testing",
+    "subprocess"
+  ],
+  "competition.cpp": [
+    "c++",
+    "dynamic programming",
+    "bit manipulation",
+    "combinatorial algorithm",
+    "array algorithm"
+  ],
+  "example.cpp": [
+    "c++",
+    "dsu",
+    "union-find",
+    "inputoutput",
+    "data structures",
+    "graph theory"
+  ],
+  "exotermic100.py": [
+    "python",
+    "randomization",
+    "array algorithm",
+    "binary search",
+    "probability",
+    "simulation",
+    "finance",
+    "math",
+    "algorithm analysis"
+  ],
+  "hash_string.c": [
+    "c",
+    "string algorithm",
+    "hash function",
+    "array algorithm",
+    "data structures",
+    "sport programming"
+  ],
+  "linReg.py": [
+    "python",
+    "linearregression",
+    "datacleaning",
+    "dataanalysis",
+    "arrayalgorithm",
+    "machinelearning",
+    "datavisualization",
+    "datasetprocessing",
+    "statistics",
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "seaborn"
+  ],
+  "matrix.py": [
+    "python",
+    "dataframe",
+    "array algorithm",
+    "data visualization",
+    "correlation",
+    "heatmap",
+    "machine learning",
+    "data cleaning",
+    "numpy",
+    "pandas"
+  ],
+  "merge_sort.c": [
+    "c",
+    "sorting algorithm",
+    "merge sort",
+    "array algorithm",
+    "memory management",
+    "input handling"
+  ],
+  "merge_sort_iter.c": [
+    "c",
+    "sorting algorithm",
+    "array algorithm",
+    "merge sort",
+    "memory allocation",
+    "input validation",
+    "integer operations",
+    "binary search"
+  ],
+  "orkestrator.py": [
+    "python",
+    "langchain",
+    "chatbot",
+    "state machine",
+    "graph theory",
+    "natural language processing",
+    "typeddict",
+    "annotated",
+    "sport programming"
+  ],
+  "quad.c": [
+    "c",
+    "quadratic equation",
+    "math",
+    "number theory",
+    "array algorithm"
+  ],
+  "quick_sort.c": [
+    "c",
+    "sorting algorithm",
+    "array algorithm",
+    "quick sort",
+    "memory management",
+    "input handling"
+  ],
+  "test.cpp": [
+    "c++",
+    "orderedset",
+    "segmenttree",
+    "sortingalgorithm",
+    "arrayalgorithm",
+    "binarysearch",
+    "numbertheory",
+    "sportprogramming"
+  ],
+  "test.py": [
+    "python",
+    "randomization",
+    "array algorithm",
+    "binary search",
+    "math",
+    "simulation"
+  ],
+  "test1.cpp": [
+    "c++",
+    "dynamic programming",
+    "array algorithm",
+    "number theory",
+    "sport programming"
+  ],
+  "test2.cpp": [
+    "c++",
+    "dynamic programming",
+    "math",
+    "number theory",
+    "array algorithm",
+    "binary search",
+    "greedy algorithm",
+    "sport programming"
+  ],
+  "test2.py": [
+    "python",
+    "arrayalgorithm",
+    "binarysearch",
+    "dynamicprogramming",
+    "math",
+    "sportprogramming"
+  ],
+  "test3.cpp": [
+    "c++",
+    "graph theory",
+    "dynamic programming",
+    "number theory",
+    "array algorithm",
+    "data structures"
+  ],
+  "test4.cpp": [
+    "c++",
+    "dfs",
+    "graph theory",
+    "array algorithm",
+    "data structures",
+    "set",
+    "unorderedset",
+    "math"
+  ],
+  "universal_swap.c": [
+    "c",
+    "swap",
+    "array algorithm",
+    "memory management",
+    "c programming"
+  ]
+}

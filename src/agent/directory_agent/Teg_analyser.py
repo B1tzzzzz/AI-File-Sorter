@@ -884,5 +884,5 @@ def Teg_analyse(programm_path):
 
 if __name__ == "__main__":
     Teg_analyse(
-        r"C:\Users\MSI\Documents\GitHub\AI-File-Sorter\src\agent\directory_agent"
+        r"C:\Users\Матвей\Documents\GitHub\AI-File-Sorter\src\agent\directory_agent"
     )
