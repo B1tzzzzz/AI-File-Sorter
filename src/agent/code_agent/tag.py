@@ -15,29 +15,28 @@ MODEL_NAME = "qwen2.5:7b"
 INDEX_FILE_NAME = "code_index.json"
 
 SUPPORTED_EXTENSIONS = {
-    '.py': 'Python',
-    '.c': 'C',
-    '.cpp': 'C++',
-    '.cc': 'C++',
-    '.cxx': 'C++',
-    '.h': 'C/C++ Header',
-    '.hpp': 'C++ Header',
+    '.py': 'python',
+    '.c': 'c',
+    '.cpp': 'c++',
+    '.cc': 'c++',
+    '.cxx': 'c++',
+    '.h': 'c/c++ header',
+    '.hpp': 'c++ header',
 }
 
 SYSTEM_PROMPT = (
     "You are an expert in competitive programming and algorithm analysis. "
     "Your task is to analyze the source code and return ONLY a comma-separated list of specific technical tags in English (lowercase). "
     "Follow these rules strictly:\n"
-    "1. LANGUAGE: Always include the language (e.g., c++, python, c).\n"
-    "2. ALGORITHMS & DATA STRUCTURES: Identify specific named algorithms or structures (e.g., fenwick tree, 3d fenwick, aho–corasick, dijkstra, trie, segment tree, binary search, dynamic programming).\n"
-    "3. DOMAIN: Include the problem domain (e.g., string algorithm, array algorithm, graph theory, math, geometry, sport programming).\n"
-    "4. SPECIFICITY: Be as specific as possible. Instead of just 'data structure', use 'fenwick tree'. Instead of 'math', use 'number theory' if applicable.\n"
-    "5. FORMAT: Return only the tags, separated by commas. No explanations, no quotes, no extra text.\n"
+    "1. ALGORITHMS & DATA STRUCTURES: Identify specific named algorithms or structures (e.g., fenwick tree, 3d fenwick, aho–corasick, dijkstra, trie, segment tree, binary search, dynamic programming).\n"
+    "2. DOMAIN: Include the problem domain (e.g., string algorithm, array algorithm, graph theory, math, geometry, sport programming).\n"
+    "3. SPECIFICITY: Be as specific as possible. Instead of just 'data structure', use 'fenwick tree'. Instead of 'math', use 'number theory' if applicable.\n"
+    "4. FORMAT: Return only the tags, separated by commas. No explanations, no quotes, no extra text. DO NOT include the programming language in the tags — it will be added automatically.\n"
     "\n"
     "Examples:\n"
-    "- For a C++ file with Aho-Corasick: c++, aho–corasick algorithm, string algorithm, trie, sport programming\n"
-    "- For a C++ file with 3D prefix sums/Fenwick: c++, 3d fenwick, fenwick tree, array algorithm, data structures, sport programming\n"
-    "- For a Python sorting script: python, sorting algorithm, array algorithm, sort"
+    "- For a file with Aho-Corasick: aho–corasick algorithm, string algorithm, trie, sport programming\n"
+    "- For a file with 3D prefix sums/Fenwick: 3d fenwick, fenwick tree, array algorithm, data structures, sport programming\n"
+    "- For a Python sorting script: sorting algorithm, array algorithm, sort"
 )
 
 def detect_language(file_path: str) -> str:
@@ -58,7 +57,21 @@ def read_code_file(file_path: str) -> str:
     except Exception as e:
         return f"ERROR reading file: {e}"
 
-def analyze_code(file_content: str, language: str) -> str:
+def parse_tags(raw_answer: str, language: str) -> list:
+    tags = raw_answer.strip().lower()
+    tags = re.sub(r'[^a-z0-9,\s\-–+]', '', tags)
+    tags = re.sub(r'\s*,\s*', ',', tags)
+    tags = re.sub(r'\s+', ' ', tags).strip()
+    tags = tags.strip(', ')
+    
+    tag_list = [t.strip() for t in tags.split(',') if t.strip()]
+    language_aliases = {'c', 'c++', 'python', 'c/c++', 'c/c++ header', 'c++ header', 'cpp'}
+    tag_list = [t for t in tag_list if t not in language_aliases]
+    tag_list.insert(0, language)
+    
+    return tag_list
+
+def analyze_code(file_content: str, language: str) -> list:
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": (
@@ -69,16 +82,9 @@ def analyze_code(file_content: str, language: str) -> str:
     try:
         response = ollama.chat(model=MODEL_NAME, messages=messages, stream=False)
         raw_answer = response['message']['content']
-        
-        tags = raw_answer.strip().lower()
-        tags = re.sub(r'[^a-z0-9,\s\-–+]', '', tags)
-        tags = re.sub(r'\s*,\s*', ', ', tags)
-        tags = re.sub(r'\s+', ' ', tags).strip()
-        tags = tags.strip(', ')
-        
-        return tags
+        return parse_tags(raw_answer, language)
     except Exception as e:
-        return f"Error: {e}"
+        return [f"Error: {e}"]
 
 def load_index(directory: str) -> dict:
     index_path = os.path.join(directory, INDEX_FILE_NAME)
@@ -106,44 +112,6 @@ def collect_code_files(directory: str) -> list:
             if ext in SUPPORTED_EXTENSIONS:
                 files.append(entry.path)
     return sorted(files)
-
-def process_single_file(file_path: str, index_data: dict, skip_existing: bool = True) -> bool:
-    file_name = os.path.basename(file_path)
-    
-    if skip_existing and file_name in index_data:
-        print(f"  [skip] {file_name} (already in index)")
-        return False
-    
-    language = detect_language(file_path)
-    if language is None:
-        print(f"  [skip] {file_name} (unsupported extension)")
-        return False
-    
-    code_content = read_code_file(file_path).strip()
-    
-    if code_content.startswith("ERROR"):
-        print(f"  [error] {file_name}: {code_content}")
-        return False
-    
-    if len(code_content) < 50:
-        print(f"  [skip] {file_name} (too short)")
-        return False
-    
-    lines = code_content.split('\n')
-    loc = len([l for l in lines if l.strip()])
-    
-    print(f"  [analyze] {file_name} ({language}, {loc} lines)...", end=" ", flush=True)
-    
-    tags = analyze_code(code_content, language)
-    
-    if tags.startswith("Error"):
-        print(f"ERROR: {tags}")
-        return False
-
-    print(f"Tags: {tags}")
-    
-    index_data[file_name] = tags
-    return True
 
 def main():
     directory = input("Enter path to directory with code files: ").strip().strip('"').strip("'")
@@ -186,6 +154,11 @@ def main():
             continue
         
         language = detect_language(file_path)
+        if language is None:
+            print(f"  [skip] Unsupported extension")
+            skipped_count += 1
+            continue
+        
         code_content = read_code_file(file_path).strip()
         
         if code_content.startswith("ERROR"):
@@ -198,16 +171,20 @@ def main():
             skipped_count += 1
             continue
         
+        if len(code_content) > 6000:
+            print(f"  [skip] File too big (> 6000 characters)")
+            skipped_count += 1
+            continue
+        
         lines = code_content.split('\n')
         loc = len([l for l in lines if l.strip()])
         
-        print(f"  Language: {language} | Lines: {loc} | Size: {len(code_content)} chars")
-        print(f"  Analyzing...", end=" ", flush=True)
+        print(f"  Language: {language} | Lines: {loc} | Size: {len(code_content)} chars", flush=True)
         
         tags = analyze_code(code_content, language)
         
-        if tags.startswith("Error"):
-            print(f"ERROR: {tags}")
+        if tags and tags[0].startswith("Error"):
+            print(f"ERROR: {tags[0]}")
             error_count += 1
             continue
         
