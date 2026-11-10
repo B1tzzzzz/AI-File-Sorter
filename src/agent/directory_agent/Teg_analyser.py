@@ -1,11 +1,12 @@
 import re
 import json
+import time
 from pathlib import Path
 from collections import Counter
 from ollama import Client
 
 BATCH_SIZE = 15
-TREE_FILE_BATCH = 20
+TREE_FILE_BATCH = 8
 MAX_FIX_ROUNDS = 2
 MAX_TREE_ROUNDS = 2
 ENABLE_TREE_REBUILD = False
@@ -13,6 +14,12 @@ CLIENT_TIMEOUT = 300.0
 JSON_ARRAY_SCHEMA = {"type": "array", "items": {"type": "string"}}
 JSON_OBJECT_SCHEMA = {"type": "object"}
 DUP_PREFIX_LEN = 4
+
+NUM_PREDICT_SORTER = 1500
+NUM_PREDICT_STRUCT = 600
+NUM_PREDICT_FILES = 400
+NUM_PREDICT_REBUILD = 2500
+NUM_CTX = 4096
 
 
 # ════════════════════════════════════════════════════════════════
@@ -159,6 +166,11 @@ def _safe_dump(path, obj):
     tmp.replace(path)
 
 
+def _timed_print(start, suffix=""):
+    elapsed = time.time() - start
+    print(f" {elapsed:.1f}s{suffix}")
+
+
 # ════════════════════════════════════════════════════════════════
 #  АГЕНТ 1: СОРТИРОВЩИК
 # ════════════════════════════════════════════════════════════════
@@ -171,16 +183,22 @@ def _ask_sorter(client, model, system_prompt, chunk):
     for attempt in range(1, 4):
         try:
             print(f"    [sorter] попытка {attempt}", end="", flush=True)
+            t0 = time.time()
             chunks = []
             for part in client.chat(
                 model=model, messages=messages, format=JSON_ARRAY_SCHEMA,
-                options={"temperature": 0.1 if attempt == 1 else 0.5},
+                options={
+                    "temperature": 0.1 if attempt == 1 else 0.5,
+                    "num_predict": NUM_PREDICT_SORTER,
+                    "num_ctx": NUM_CTX,
+                    "repeat_penalty": 1.1,
+                },
                 keep_alive="10m", stream=True,
             ):
                 chunks.append(part["message"]["content"])
                 print(".", end="", flush=True)
-            print(" ok")
             content = "".join(chunks)
+            _timed_print(t0)
         except KeyboardInterrupt:
             raise
         except Exception as e:
@@ -231,15 +249,22 @@ def _ask_sorter_fix(client, model, system_prompt, all_tags, problems):
     ]
     print(f"    [sorter-fix] {len(files)} файлов на переделку", end="", flush=True)
     try:
+        t0 = time.time()
         chunks = []
         for part in client.chat(
             model=model, messages=messages, format=JSON_ARRAY_SCHEMA,
-            options={"temperature": 0.2}, keep_alive="10m", stream=True,
+            options={
+                "temperature": 0.2,
+                "num_predict": NUM_PREDICT_SORTER,
+                "num_ctx": NUM_CTX,
+                "repeat_penalty": 1.1,
+            },
+            keep_alive="10m", stream=True,
         ):
             chunks.append(part["message"]["content"])
             print(".", end="", flush=True)
-        print(" ok")
         content = "".join(chunks)
+        _timed_print(t0)
     except KeyboardInterrupt:
         raise
     except Exception as e:
@@ -271,15 +296,21 @@ def _ask_validator(client, model, validator_prompt, tags, paths):
     ]
     try:
         print(f"    [validator] проверка {len(paths)} путей", end="", flush=True)
+        t0 = time.time()
         chunks = []
         for part in client.chat(
             model=model, messages=messages, format=JSON_OBJECT_SCHEMA,
-            options={"temperature": 0.1}, keep_alive="10m", stream=True,
+            options={
+                "temperature": 0.1,
+                "num_predict": 800,
+                "num_ctx": NUM_CTX,
+            },
+            keep_alive="10m", stream=True,
         ):
             chunks.append(part["message"]["content"])
             print(".", end="", flush=True)
-        print(" ok")
         content = "".join(chunks)
+        _timed_print(t0)
     except KeyboardInterrupt:
         raise
     except Exception as e:
@@ -350,15 +381,21 @@ def _ask_tree_structure(client, model, prompt, folders_counts, top_categories):
     print(f"    [tree stage 1] структура: {len(folders_counts)} папок",
           end="", flush=True)
     try:
+        t0 = time.time()
         chunks = []
         for part in client.chat(
             model=model, messages=messages, format=JSON_OBJECT_SCHEMA,
-            options={"temperature": 0.1}, keep_alive="10m", stream=True,
+            options={
+                "temperature": 0.1,
+                "num_predict": NUM_PREDICT_STRUCT,
+                "num_ctx": NUM_CTX,
+            },
+            keep_alive="10m", stream=True,
         ):
             chunks.append(part["message"]["content"])
             print(".", end="", flush=True)
-        print(" ok")
         content = "".join(chunks)
+        _timed_print(t0)
     except KeyboardInterrupt:
         raise
     except Exception as e:
@@ -389,6 +426,7 @@ def _ask_tree_structure(client, model, prompt, folders_counts, top_categories):
 
 # ════════════════════════════════════════════════════════════════
 #  АГЕНТ 3 (этап 2): проверка СМЫСЛА файлов батчами
+#  Маленькие батчи + num_predict, чтобы не было бесконечной генерации
 # ════════════════════════════════════════════════════════════════
 def _ask_tree_files(client, model, prompt, batch_paths, tegs):
     payload = {
@@ -403,25 +441,38 @@ def _ask_tree_files(client, model, prompt, batch_paths, tegs):
     ]
     print(f"      batch ({len(batch_paths)} файлов)", end="", flush=True)
     try:
+        t0 = time.time()
         chunks = []
         for part in client.chat(
             model=model, messages=messages, format=JSON_OBJECT_SCHEMA,
-            options={"temperature": 0.1}, keep_alive="10m", stream=True,
+            options={
+                "temperature": 0.1,
+                "num_predict": NUM_PREDICT_FILES,
+                "num_ctx": NUM_CTX,
+                "repeat_penalty": 1.15,
+            },
+            keep_alive="10m", stream=True,
         ):
             chunks.append(part["message"]["content"])
             print(".", end="", flush=True)
-        print(" ok")
         content = "".join(chunks)
+        _timed_print(t0)
     except KeyboardInterrupt:
         raise
     except Exception as e:
         print(f" ERROR: {e}")
         return []
 
+    # Обрезаем потенциальные хвосты
+    content = content.strip()
+    if not content.startswith("{"):
+        print(f"      [skip] не JSON: {content[:80]!r}")
+        return []
+
     try:
         parsed = json.loads(content)
     except json.JSONDecodeError:
-        print(f"      [tree stage 2] invalid JSON")
+        print(f"      [skip] invalid JSON")
         return []
 
     if not isinstance(parsed, dict):
@@ -579,7 +630,6 @@ def _tree_validation_staged(client, model, structure_prompt, files_prompt,
         for iss in struct_issues[:10]:
             print(f"      · {iss.get('type')}: {iss.get('reason', '')}")
 
-        # Подставляем files для too_specific, если их нет
         for iss in struct_issues:
             if iss.get("type") == "too_specific" and not iss.get("files"):
                 folder = (iss.get("folder") or "").strip("/") + "/"
@@ -600,7 +650,7 @@ def _tree_validation_staged(client, model, structure_prompt, files_prompt,
     else:
         print(f"    ✓ структура в порядке")
 
-    # ─── ЭТАП 2: смысл файлов батчами ───
+    # ─── ЭТАП 2: смысл файлов маленькими батчами ───
     print(f"\n  [этап 2/2] Проверка смысла файлов")
     items = list(all_paths_map.items())
     batches = [items[i:i + TREE_FILE_BATCH]
@@ -608,12 +658,23 @@ def _tree_validation_staged(client, model, structure_prompt, files_prompt,
     print(f"    батчей: {len(batches)} по ~{TREE_FILE_BATCH} файлов")
 
     all_file_issues = []
+    skipped_batches = 0
     for idx, batch in enumerate(batches, 1):
         print(f"    [{idx}/{len(batches)}]", end="")
-        batch_paths = dict(batch)
-        issues = _ask_tree_files(client, model, files_prompt,
-                                  batch_paths, tegs)
-        all_file_issues.extend(issues)
+        try:
+            batch_paths = dict(batch)
+            issues = _ask_tree_files(client, model, files_prompt,
+                                      batch_paths, tegs)
+            all_file_issues.extend(issues)
+        except KeyboardInterrupt:
+            raise
+        except Exception as e:
+            print(f"      [skip batch] {e}")
+            skipped_batches += 1
+            continue
+
+    if skipped_batches:
+        print(f"    [warn] пропущено батчей: {skipped_batches}")
 
     if all_file_issues:
         print(f"    ✗ проблем файлов: {len(all_file_issues)}")
@@ -635,7 +696,7 @@ def _tree_validation_staged(client, model, structure_prompt, files_prompt,
 
 
 # ════════════════════════════════════════════════════════════════
-#  Опциональный rebuild (по умолчанию выключен)
+#  Опциональный rebuild
 # ════════════════════════════════════════════════════════════════
 def _ask_tree_rebuild(client, model, prompt, all_paths, tegs):
     payload = {
@@ -650,15 +711,21 @@ def _ask_tree_rebuild(client, model, prompt, all_paths, tegs):
     print(f"    [tree rebuild] перестройка {len(all_paths)} путей",
           end="", flush=True)
     try:
+        t0 = time.time()
         chunks = []
         for part in client.chat(
             model=model, messages=messages, format=JSON_OBJECT_SCHEMA,
-            options={"temperature": 0.1}, keep_alive="10m", stream=True,
+            options={
+                "temperature": 0.1,
+                "num_predict": NUM_PREDICT_REBUILD,
+                "num_ctx": NUM_CTX,
+            },
+            keep_alive="10m", stream=True,
         ):
             chunks.append(part["message"]["content"])
             print(".", end="", flush=True)
-        print(" ok")
         content = "".join(chunks)
+        _timed_print(t0)
     except KeyboardInterrupt:
         raise
     except Exception as e:
@@ -733,6 +800,7 @@ def Teg_analyse(programm_path):
     print(f"Всего файлов: {len(items)}, батчей: {len(batches)} (размер {BATCH_SIZE})")
 
     all_paths_map = {}
+    start_total = time.time()
 
     # ─── Основной цикл: агент 1 + агент 2 по батчам ───
     try:
@@ -762,11 +830,12 @@ def Teg_analyse(programm_path):
     for f, p in zip(tegs, ordered):
         all_paths_map[f] = p
 
-    # ─── АГЕНТ 3: пошаговая проверка дерева ───
+    # ─── АГЕНТ 3: пошаговая проверка ───
     print("\n═══ Tree validation (staged) ═══")
 
     for round_no in range(1, MAX_TREE_ROUNDS + 1):
         print(f"\n[tree round {round_no}/{MAX_TREE_ROUNDS}]")
+        t0 = time.time()
         all_paths_map, issues_count = _tree_validation_staged(
             client, "qwen2.5:7b",
             structure_prompt, files_prompt,
@@ -774,6 +843,7 @@ def Teg_analyse(programm_path):
         )
         _safe_dump(base / "new_paths.json",
                    [all_paths_map[f] for f in tegs])
+        _timed_print(t0, " round time")
 
         if issues_count == 0:
             print(f"  ✓ дерево логично")
@@ -781,7 +851,6 @@ def Teg_analyse(programm_path):
 
         print(f"  → после раунда {round_no}: было {issues_count} issues")
 
-    # ─── Опциональный rebuild ───
     if ENABLE_TREE_REBUILD:
         print("\n[tree rebuild (optional)]")
         candidate = _ask_tree_rebuild(
@@ -806,7 +875,9 @@ def Teg_analyse(programm_path):
 
     others = sum(1 for p in final if p.split("/")[0] == "Other")
     unsorted = sum(1 for p in final if p.split("/")[0] == "Unsorted")
+    total_time = time.time() - start_total
     print(f"\nГотово: {len(final)} путей, Other/: {others}, Unsorted/: {unsorted}")
+    print(f"Общее время: {total_time:.0f} с")
     print(json.dumps(final, ensure_ascii=False, indent=2))
     return final
 
