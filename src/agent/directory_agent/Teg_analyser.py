@@ -15,18 +15,74 @@ JSON_ARRAY_SCHEMA = {"type": "array", "items": {"type": "string"}}
 JSON_OBJECT_SCHEMA = {"type": "object"}
 DUP_PREFIX_LEN = 4
 
-MAX_PARTS = 6            # 5 папок + файл (было 5)
-SPLIT_THRESHOLD = 5      # разбиваем папки с >5 файлов
+MAX_PARTS = 6
+SPLIT_THRESHOLD = 5
+FOLDER_TOP_TAGS_N = 5
 
 NUM_PREDICT_SORTER = 2500
-NUM_PREDICT_STRUCT = 1000
+NUM_PREDICT_STRUCT = 1500
 NUM_PREDICT_FILES = 500
 NUM_PREDICT_REBUILD = 3500
 NUM_CTX = 4096
 
 
 # ════════════════════════════════════════════════════════════════
-#  ДЕТЕРМИНИРОВАННЫЙ КЛАССИФИКАТОР — fallback для Other/Unsorted
+#  Проверка suggest по whitelist
+# ════════════════════════════════════════════════════════════════
+BAD_ROOTS = {
+    "sciencefiction": "Literature/ScienceFiction",
+    "play": "Literature/Plays", "plays": "Literature/Plays",
+    "novel": "Literature/Novels", "novels": "Literature/Novels",
+    "poem": "Literature/Poems", "poems": "Literature/Poems",
+    "story": "Literature/ShortStories", "stories": "Literature/ShortStories",
+    "ui": "Technology/UI", "ux": "Technology/UI",
+    "web": "Technology/Web",
+    "programming": "Technology/Programming",
+    "algorithm": "Technology/Programming/Algorithms",
+    "algorithms": "Technology/Programming/Algorithms",
+    "sorting": "Technology/Programming/Algorithms/Sorting",
+    "graphs": "Technology/Programming/Algorithms/Graphs",
+    "dynamicprogramming": "Technology/Programming/Algorithms/DynamicProgramming",
+    "computing": "Technology/Computing",
+    "networks": "Technology/Networks",
+    "hardware": "Technology/Hardware",
+    "troubleshooting": "Technology/Troubleshooting",
+    "cars": "Vehicles/Cars",
+    "primates": "Animals/Primates",
+    "birds": "Animals/Birds",
+    "cats": "Animals/Cats",
+    "wildlife": "Animals/Wildlife",
+    "geology": "Nature/Geology",
+    "nightsky": "Nature/NightSky",
+    "landscape": "Nature/Landscape",
+    "autumn": "Nature/Autumn",
+    "cities": "Urban", "city": "Urban",
+    "machinelearning": "Technology/Programming/MachineLearning",
+    "datastructures": "Technology/Programming/DataStructures",
+    "testing": "Technology/Programming/Testing",
+    "memorymanagement": "Technology/Programming/MemoryManagement",
+    "dictionary": "Language/Dictionary",
+    "islam": "History/Islam",
+}
+
+
+def _sanitize_suggest(suggest):
+    if not suggest:
+        return suggest
+    s = suggest.strip("/")
+    if not s:
+        return suggest
+    parts = s.split("/")
+    first_lower = parts[0].lower()
+    if first_lower in BAD_ROOTS:
+        replacement = BAD_ROOTS[first_lower]
+        rest = "/".join(parts[1:])
+        return f"{replacement}/{rest}" if rest else replacement
+    return s
+
+
+# ════════════════════════════════════════════════════════════════
+#  Детерминированный классификатор — fallback для Other/Unsorted
 # ════════════════════════════════════════════════════════════════
 TAG_RULES = [
     (r"kitten|\bcat\b|cats|feline", "Animals/Cats"),
@@ -72,75 +128,62 @@ TAG_RULES = [
 
 
 # ════════════════════════════════════════════════════════════════
-#  ПРАВИЛА СПЛИТА — двух-уровневая структура
-#  Порядок КРИТИЧЕН: специфичные выше общих
+#  ПРАВИЛА СПЛИТА — порядок КРИТИЧЕН
+#  Testing / Memory / Web — ВЫШЕ generic \balgorithm\b
+#  \s* везде — матчит слитные теги (segmenttree, sortingalgorithm)
 # ════════════════════════════════════════════════════════════════
 SPLIT_RULES = [
-    # NLP — выше ML, потому что у orkestrator есть и "graph theory"
-    (r"natural language processing|\bnlp\b|langchain|chatbot|\bllm\b|"
-     r"chatgpt|openai",
+    # NLP — выше ML
+    (r"natural\s*language\s*processing|\bnlp\b|langchain|chatbot|\bllm\b",
      "MachineLearning/NLP"),
-    # ML/Regression — специфичнее общего ML
-    (r"linear.?regression|logistic regression|regression analysis",
+    (r"linear\s*regression|logistic\s*regression|regression\s*analysis",
      "MachineLearning/Regression"),
-    # ML/NeuralNetworks
-    (r"neural network|\bneural\b|\bcnn\b|\brnn\b|\btransformer\b|deep learning",
+    (r"neural\s*network|deep\s*learning|\bcnn\b|\brnn\b|\btransformer\b",
      "MachineLearning/NeuralNetworks"),
-    # ML/DataAnalysis — специфичные библиотеки
-    (r"data analysis|data cleaning|data visualization|correlation|heatmap|"
+    (r"data\s*analysis|data\s*cleaning|data\s*visualization|correlation|heatmap|"
      r"numpy|pandas|matplotlib|seaborn|dataframe",
      "MachineLearning/DataAnalysis"),
-    # ML — общий
-    (r"machine learning|supervised learning|unsupervised", "MachineLearning"),
+    (r"machine\s*learning|supervised\s*learning|unsupervised", "MachineLearning"),
 
-    # DataStructures/Trees
-    (r"avl tree|segment tree|binary search tree|red.black tree|"
-     r"tree algorithm|binary tree", "DataStructures/Trees"),
-    # DataStructures/UnionFind
-    (r"\bdsu\b|union.find|disjoint set", "DataStructures/UnionFind"),
-
-    # Algorithms/Graphs — ВЫШЕ DataStructures/Sets
-    (r"graph theory|\bdfs\b|\bbfs\b|undirected graph|directed graph|"
-     r"connected components|topological|dijkstra|bfs|dfs|shortest path",
-     "Algorithms/Graphs"),
-    # Algorithms/DynamicProgramming
-    (r"dynamic programming|\bdp\b|memoization", "Algorithms/DynamicProgramming"),
-    # Algorithms/Sorting
-    (r"sorting algorithm|merge sort|quick sort|bubble sort|insertion sort|"
-     r"heap sort|counting sort|radix sort|pseudo sorting", "Algorithms/Sorting"),
-    # Algorithms/BinarySearch
-    (r"binary search|quick select|lower bound|upper bound", "Algorithms/BinarySearch"),
-    # Algorithms/Strings
-    (r"string algorithm|hash function|\bkmp\b|\btrie\b|suffix array|"
-     r"string matching", "Algorithms/Strings"),
-    # Algorithms/Greedy
-    (r"greedy", "Algorithms/Greedy"),
-    # Algorithms/Math
-    (r"number theory|modular arithmetic|prime number|binary.?exponentiation|"
-     r"quadratic equation|floating point comparison|numerical stability|"
-     r"integer division|\bmath\b|\barithmetic\b|\bstatistics\b",
-     "Algorithms/Math"),
-
-    # DataStructures/Sets — ниже Graphs
-    (r"ordered set|unordered set|hash set|std::set|std::unordered_set|\bset\b",
-     "DataStructures/Sets"),
-    # DataStructures/Arrays
-    (r"linked list|priority queue|\barraylist\b|\bstack\b|\bdeque\b",
-     "DataStructures/Arrays"),
-    # DataStructures — общий
-    (r"data structure", "DataStructures"),
-
-    # Algorithms — общий
-    (r"\balgorithm\b", "Algorithms"),
-
-    # Testing
+    # ─── Testing / Memory / Web ВЫШЕ generic algorithm ───
     (r"testing|checker|comparison|numba|subprocess", "Testing"),
-    # MemoryManagement
-    (r"memory management|memory allocation|universal swap|shift operation",
+    (r"memory\s*management|memory\s*allocation|universal\s*swap|shift\s*operation",
      "MemoryManagement"),
-    # Web
-    (r"web development|\bhtml\b|\bcss\b|javascript|\bphp\b|wordpress", "Web"),
+    (r"web\s*development|\bhtml\b|\bcss\b|javascript|\bphp\b|wordpress", "Web"),
+
+    # ─── DataStructures конкретные ───
+    (r"avl\s*tree|segment\s*tree|binary\s*search\s*tree|red.black\s*tree|"
+     r"tree\s*algorithm|binary\s*tree", "DataStructures/Trees"),
+    (r"\bdsu\b|union.find|disjoint\s*set", "DataStructures/UnionFind"),
+
+    # ─── Algorithms конкретные ───
+    (r"graph\s*theory|\bdfs\b|\bbfs\b|undirected\s*graph|directed\s*graph|"
+     r"connected\s*components|topological|dijkstra|shortest\s*path",
+     "Algorithms/Graphs"),
+    (r"dynamic\s*programming|\bdp\b|memoization", "Algorithms/DynamicProgramming"),
+    (r"sorting\s*algorithm|merge\s*sort|quick\s*sort|bubble\s*sort|"
+     r"insertion\s*sort|heap\s*sort|counting\s*sort|radix\s*sort|"
+     r"pseudo\s*sorting", "Algorithms/Sorting"),
+    (r"binary\s*search|quick\s*select|lower\s*bound|upper\s*bound|"
+     r"searching\s*algorithm", "Algorithms/BinarySearch"),
+    (r"string\s*algorithm|hash\s*function|\bkmp\b|\btrie\b|suffix\s*array|"
+     r"string\s*matching|hash\s*string", "Algorithms/Strings"),
+    (r"greedy", "Algorithms/Greedy"),
+    (r"number\s*theory|modular\s*arithmetic|prime\s*number|"
+     r"binary\s*exponentiation|quadratic\s*equation|floating\s*point\s*comparison|"
+     r"numerical\s*stability|integer\s*division|\bmath\b|\barithmetic\b|"
+     r"\bstatistics\b", "Algorithms/Math"),
+
+    # ─── DataStructures менее специфичные ───
+    (r"ordered\s*set|unordered\s*set|hash\s*set|\bset\b", "DataStructures/Sets"),
+    (r"linked\s*list|priority\s*queue|\barraylist\b|\bstack\b|\bdeque\b",
+     "DataStructures/Arrays"),
+    (r"data\s*structure", "DataStructures"),
+
+    # ─── Generic — последний ───
+    (r"\balgorithm\b|\w*algorithm\b", "Algorithms"),
 ]
+
 
 LANGUAGE_MAP = {
     ".c": "C", ".h": "C",
@@ -167,7 +210,6 @@ def classify_by_tags(tags):
 
 
 def classify_by_split_rules(tags):
-    """Возвращает подкатегорию (например, 'Algorithms/Sorting') или None."""
     if not tags:
         return None
     text = " ".join(tags).lower()
@@ -183,6 +225,28 @@ def language_subfolder(fname):
 
 def _is_code_file(fname):
     return Path(fname).suffix.lower() in CODE_EXTENSIONS
+
+
+# ════════════════════════════════════════════════════════════════
+#  Агрегация тегов по папкам
+# ════════════════════════════════════════════════════════════════
+def _build_folder_stats(all_paths_map, tegs, top_n=FOLDER_TOP_TAGS_N):
+    by_folder = defaultdict(list)
+    for fname, path in all_paths_map.items():
+        folder = "/".join(path.split("/")[:-1])
+        by_folder[folder].append(fname)
+
+    result = {}
+    for folder, files in by_folder.items():
+        if not folder:
+            continue
+        tag_counter = Counter()
+        for f in files:
+            for tag in tegs.get(f, []):
+                tag_counter[tag.lower()] += 1
+        top_tags = [t for t, _ in tag_counter.most_common(top_n)]
+        result[folder] = {"count": len(files), "top_tags": top_tags}
+    return result
 
 
 # ════════════════════════════════════════════════════════════════
@@ -277,16 +341,9 @@ def _timed_print(start, suffix=""):
 
 
 # ════════════════════════════════════════════════════════════════
-#  ПОСТПРОЦЕССИНГ: принудительная правильная структура для кода
-#  Работает НАД результатом модели — перекладывает ВСЕ файлы кода
+#  Принудительная классификация для кода
 # ════════════════════════════════════════════════════════════════
-def _refine_programming_paths(all_paths_map, tegs):
-    """
-    Проходит по ВСЕМ файлам кода. Применяет SPLIT_RULES к тегам.
-    Если правило даёт путь — ставит его. Иначе — по языку.
-    Гарантирует, что модель не оставит код в "Technology/UI/" или
-    "Technology/Programming/Sorting/" без Algorithms.
-    """
+def _refine_programming_paths(all_paths_map, tegs, silent=False):
     moved = 0
     for fname in list(all_paths_map.keys()):
         if not _is_code_file(fname):
@@ -296,37 +353,33 @@ def _refine_programming_paths(all_paths_map, tegs):
         target = classify_by_split_rules(tags)
         if not target:
             lang = language_subfolder(fname)
-            target = f"Other/{lang}" if lang else "Other"
-        else:
-            target = target  # например "Algorithms/Sorting"
+            if not lang:
+                continue
+            target = f"Other/{lang}"
 
         expected = f"Technology/Programming/{target}/{fname}"
-
-        # Проверка глубины
         if len(expected.split("/")) > MAX_PARTS:
-            # Слишком глубоко — упростим: только первый уровень target
             first = target.split("/")[0]
             expected = f"Technology/Programming/{first}/{fname}"
 
         current = all_paths_map[fname]
         if current == expected:
             continue
-        # Уже в правильной подкатегории (или глубже) — не трогаем
         if current.startswith(f"Technology/Programming/{target}/"):
             continue
 
         old = current
         all_paths_map[fname] = expected
         moved += 1
-        if moved <= 15:
+        if not silent and moved <= 15:
             print(f"    refine {old} → {expected}")
 
-    print(f"  [refine] переложено файлов кода: {moved}")
+    if not silent:
+        print(f"  [refine] переложено файлов кода: {moved}")
     return moved
 
 
 def _split_oversized_folders(all_paths_map, tegs, threshold=SPLIT_THRESHOLD):
-    """Добивает случаи, когда папка большая, а refine не сработал (не код)."""
     by_folder = defaultdict(list)
     for fname, path in all_paths_map.items():
         parts = path.split("/")
@@ -362,7 +415,7 @@ def _split_oversized_folders(all_paths_map, tegs, threshold=SPLIT_THRESHOLD):
 
 
 # ════════════════════════════════════════════════════════════════
-#  АГЕНТ 1: СОРТИРОВЩИК
+#  Агент 1: сортировщик
 # ════════════════════════════════════════════════════════════════
 def _ask_sorter(client, model, system_prompt, chunk):
     expected = set(chunk.keys())
@@ -473,7 +526,7 @@ def _ask_sorter_fix(client, model, system_prompt, all_tags, problems):
 
 
 # ════════════════════════════════════════════════════════════════
-#  АГЕНТ 2
+#  Агент 2
 # ════════════════════════════════════════════════════════════════
 def _ask_validator(client, model, validator_prompt, tags, paths):
     payload = {"tags": tags, "paths": paths}
@@ -518,11 +571,12 @@ def _ask_validator(client, model, validator_prompt, tags, paths):
             continue
         f = p.get("file")
         if f in tags and f in paths:
+            suggest = _sanitize_suggest(p.get("suggest", ""))
             clean.append({
                 "file": f,
                 "current": p.get("current", paths[f]),
                 "reason": p.get("reason", ""),
-                "suggest": p.get("suggest", ""),
+                "suggest": suggest,
             })
     return clean
 
@@ -553,15 +607,16 @@ def _sort_with_validation(client, model, sorter_prompt, validator_prompt, chunk)
 
 
 # ════════════════════════════════════════════════════════════════
-#  АГЕНТ 3, этап 1
+#  Агент 3, этап 1 — структура с тегами
 # ════════════════════════════════════════════════════════════════
-def _ask_tree_structure(client, model, prompt, folders_counts, top_categories):
-    payload = {"folders": folders_counts, "top_categories": top_categories}
+def _ask_tree_structure(client, model, prompt, folder_stats, top_categories):
+    payload = {"folders": folder_stats, "top_categories": top_categories}
     messages = [
         {"role": "system", "content": prompt},
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
     ]
-    print(f"    [tree stage 1] {len(folders_counts)} папок", end="", flush=True)
+    print(f"    [tree stage 1] {len(folder_stats)} папок (с тегами)",
+          end="", flush=True)
     try:
         t0 = time.time()
         chunks = []
@@ -583,6 +638,7 @@ def _ask_tree_structure(client, model, prompt, folders_counts, top_categories):
     except Exception as e:
         print(f" ERROR: {e}")
         return {"ok": True, "issues": []}
+
     try:
         parsed = json.loads(content)
     except json.JSONDecodeError:
@@ -597,11 +653,15 @@ def _ask_tree_structure(client, model, prompt, folders_counts, top_categories):
     for iss in clean:
         if iss.get("type") == "too_specific" and not iss.get("files"):
             iss["files"] = []
+        if iss.get("to"):
+            iss["to"] = _sanitize_suggest(iss["to"])
+        if iss.get("suggest"):
+            iss["suggest"] = _sanitize_suggest(iss["suggest"])
     return {"ok": parsed.get("ok", not clean), "issues": clean}
 
 
 # ════════════════════════════════════════════════════════════════
-#  АГЕНТ 3, этап 2
+#  Агент 3, этап 2 — смысл файлов
 # ════════════════════════════════════════════════════════════════
 def _ask_tree_files(client, model, prompt, batch_paths, tegs):
     payload = {
@@ -657,12 +717,15 @@ def _ask_tree_files(client, model, prompt, batch_paths, tegs):
         if iss["type"] == "misplaced_file":
             if iss.get("file") not in batch_paths:
                 continue
+            iss["suggest"] = _sanitize_suggest(iss.get("suggest", ""))
+        if iss.get("suggest"):
+            iss["suggest"] = _sanitize_suggest(iss["suggest"])
         clean.append(iss)
     return clean
 
 
 # ════════════════════════════════════════════════════════════════
-#  Применение правок
+#  Применение правок с защитой глубины и авто-refine
 # ════════════════════════════════════════════════════════════════
 def _apply_tree_fixes(all_paths_map, issues, tegs):
     fixed = dict(all_paths_map)
@@ -671,8 +734,13 @@ def _apply_tree_fixes(all_paths_map, issues, tegs):
     def _valid_folder(folder):
         if not folder or " " in folder:
             return False
-        return all(re.fullmatch(r"[A-Za-z0-9_]+", p)
-                   for p in folder.split("/") if p)
+        parts = [p for p in folder.split("/") if p]
+        if not parts:
+            return False
+        # MAX_PARTS=6 → папок может быть ≤ 5 (5 папок + файл = 6)
+        if len(parts) >= MAX_PARTS:
+            return False
+        return all(re.fullmatch(r"[A-Za-z0-9_]+", p) for p in parts)
 
     def _rename_prefix(src, dst):
         src_p, dst_p = src + "/", dst + "/"
@@ -688,7 +756,7 @@ def _apply_tree_fixes(all_paths_map, issues, tegs):
 
         if t in ("merge", "rename_folder"):
             src = (iss.get("from") or "").strip("/")
-            dst = (iss.get("to") or "").strip("/")
+            dst = _sanitize_suggest(iss.get("to") or "").strip("/")
             if not src or not dst or not _valid_folder(dst) or src == dst:
                 skipped.append({"issue": iss, "why": "bad from/to"})
                 continue
@@ -700,7 +768,7 @@ def _apply_tree_fixes(all_paths_map, issues, tegs):
 
         elif t == "move_files":
             src_f = (iss.get("from_folder") or "").strip("/")
-            dst_f = (iss.get("to_folder") or "").strip("/")
+            dst_f = _sanitize_suggest(iss.get("to_folder") or "").strip("/")
             files = iss.get("files") or []
             if not src_f or not dst_f or not _valid_folder(dst_f):
                 skipped.append({"issue": iss, "why": "bad folders"})
@@ -717,7 +785,7 @@ def _apply_tree_fixes(all_paths_map, issues, tegs):
                 skipped.append({"issue": iss, "why": "нет файлов"})
 
         elif t == "too_specific":
-            target = (iss.get("suggest") or "").strip("/")
+            target = _sanitize_suggest(iss.get("suggest") or "").strip("/")
             files = iss.get("files") or []
             if not target or not _valid_folder(target):
                 skipped.append({"issue": iss, "why": "bad target"})
@@ -725,6 +793,9 @@ def _apply_tree_fixes(all_paths_map, issues, tegs):
             for fname in files:
                 if fname in fixed:
                     new_path = f"{target}/{fname}"
+                    if len(new_path.split("/")) > MAX_PARTS:
+                        skipped.append({"issue": iss, "why": "too deep"})
+                        continue
                     applied.append(f"move {fixed[fname]} → {new_path}")
                     fixed[fname] = new_path
 
@@ -741,17 +812,20 @@ def _apply_tree_fixes(all_paths_map, issues, tegs):
 
         elif t == "misplaced_file":
             fname = iss.get("file")
-            target = (iss.get("suggest") or "").strip("/")
+            target = _sanitize_suggest(iss.get("suggest") or "").strip("/")
             if fname not in fixed or not target or not _valid_folder(target):
                 skipped.append({"issue": iss, "why": "bad file/target"})
                 continue
             new_path = f"{target}/{fname}"
+            if len(new_path.split("/")) > MAX_PARTS:
+                skipped.append({"issue": iss, "why": "too deep"})
+                continue
             if new_path != fixed[fname]:
                 applied.append(f"move {fixed[fname]} → {new_path}")
                 fixed[fname] = new_path
 
         elif t == "inconsistent":
-            target = (iss.get("suggest") or "").strip("/")
+            target = _sanitize_suggest(iss.get("suggest") or "").strip("/")
             folders = iss.get("folders") or []
             if not target or not folders or not _valid_folder(target):
                 skipped.append({"issue": iss, "why": "bad target/folders"})
@@ -764,10 +838,21 @@ def _apply_tree_fixes(all_paths_map, issues, tegs):
                 if n:
                     applied.append(f"inconsistent {src}/ → {target}/ ({n})")
 
+    # ═══ Валидация: при ошибке откат ═══
     ok, err = validate_paths(list(fixed.values()), set(tegs.keys()), tegs)
     if not ok:
         print(f"    [tree-fix] сломали формат ({err}) — откат")
         return dict(all_paths_map), [], [{"why": f"rollback: {err}"}]
+
+    # ═══ Защита: детерминированные правила для кода всегда побеждают ═══
+    if applied:
+        refined = _refine_programming_paths(fixed, tegs, silent=True)
+        if refined:
+            applied.append(f"refine после правок: {refined}")
+            ok2, err2 = validate_paths(list(fixed.values()), set(tegs.keys()), tegs)
+            if not ok2:
+                print(f"    [tree-fix] refine сломал ({err2}) — откат")
+                return dict(all_paths_map), [], [{"why": f"rollback after refine: {err2}"}]
 
     return fixed, applied, skipped
 
@@ -806,15 +891,12 @@ def _tree_validation_staged(client, model, structure_prompt, files_prompt,
                              all_paths_map, tegs):
     total_issues = 0
 
-    folder_counts = Counter(
-        "/".join(p.split("/")[:-1]) for p in all_paths_map.values()
-    )
-    folders_dict = {f: n for f, n in folder_counts.items() if f}
+    folder_stats = _build_folder_stats(all_paths_map, tegs)
     top_cats = sorted({p.split("/")[0] for p in all_paths_map.values()})
 
-    print(f"\n  [этап 1/2] структура")
+    print(f"\n  [этап 1/2] структура (с тегами)")
     struct = _ask_tree_structure(client, model, structure_prompt,
-                                  folders_dict, top_cats)
+                                  folder_stats, top_cats)
     struct_issues = struct.get("issues", [])
     if struct_issues:
         print(f"    ✗ проблем: {len(struct_issues)}")
@@ -837,7 +919,7 @@ def _tree_validation_staged(client, model, structure_prompt, files_prompt,
     else:
         print(f"    ✓ структура в порядке")
 
-    print(f"\n  [этап 2/2] смысл файлов")
+    print(f"\n  [этап 2/2] смысл файлов (с тегами)")
     items = list(all_paths_map.items())
     batches = [items[i:i + TREE_FILE_BATCH]
                for i in range(0, len(items), TREE_FILE_BATCH)]
@@ -929,7 +1011,6 @@ def Teg_analyse(programm_path):
     all_paths_map = {}
     start_total = time.time()
 
-    # ─── Основной цикл ───
     try:
         for idx, batch in enumerate(batches, 1):
             chunk = dict(batch)
@@ -950,14 +1031,12 @@ def Teg_analyse(programm_path):
         if f not in all_paths_map:
             all_paths_map[f] = f"Other/{f}"
 
-    # ─── Fallback для Other/Unsorted ───
     print("\n[deterministic fallback]")
     ordered = [all_paths_map[f] for f in tegs]
     ordered = apply_deterministic_fallback(ordered, tegs)
     for f, p in zip(tegs, ordered):
         all_paths_map[f] = p
 
-    # ═══ ПОСТПРОЦЕССИНГ: принудительная правильная структура ═══
     print("\n[refine programming paths]")
     t_ref = time.time()
     n = _refine_programming_paths(all_paths_map, tegs)
@@ -965,7 +1044,6 @@ def Teg_analyse(programm_path):
     _safe_dump(base / "new_paths.json",
                [all_paths_map[f] for f in tegs])
 
-    # ─── Сплит больших неклассифицированных папок ───
     print("\n[split oversized folders]")
     t_split = time.time()
     moved = _split_oversized_folders(all_paths_map, tegs, SPLIT_THRESHOLD)
@@ -973,8 +1051,7 @@ def Teg_analyse(programm_path):
     _safe_dump(base / "new_paths.json",
                [all_paths_map[f] for f in tegs])
 
-    # ─── АГЕНТ 3 ───
-    print("\n═══ Tree validation (staged) ═══")
+    print("\n═══ Tree validation (staged, all agents see tags) ═══")
     for round_no in range(1, MAX_TREE_ROUNDS + 1):
         print(f"\n[tree round {round_no}/{MAX_TREE_ROUNDS}]")
         t0 = time.time()
@@ -991,13 +1068,11 @@ def Teg_analyse(programm_path):
             break
         print(f"  → issues: {issues_count}")
 
-    # ─── Финальный refine (на случай, если агент 3 что-то сломал) ───
     print("\n[final refine]")
     _refine_programming_paths(all_paths_map, tegs)
     _safe_dump(base / "new_paths.json",
                [all_paths_map[f] for f in tegs])
 
-    # ─── Финальная валидация ───
     final = [all_paths_map[f] for f in tegs]
     ok, err = validate_paths(final, set(tegs.keys()), tegs)
     if not ok:

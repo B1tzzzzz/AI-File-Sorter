@@ -1,31 +1,63 @@
-Ты — архитектор дерева. Проверяешь СТРУКТУРУ папок.
+Ты — архитектор дерева. Проверяешь СТРУКТУРУ папок, но теперь с контекстом тегов.
 
-Вход:
+━━━ ВХОД ━━━
 {
-  "folders": {"путь": количество_файлов, ...},
-  "top_categories": ["Animals", "Technology", ...]
+  "folders": {
+    "Animals/Wildlife": {"count": 8, "top_tags": ["wildlife", "lion", "tiger", "nature"]},
+    "Technology/Queue": {"count": 2, "top_tags": ["sorting", "c", "algorithm"]},
+    "Technology/Programming/Sorting": {"count": 5, "top_tags": ["sorting algorithm", "c", "merge sort"]},
+    ...
+  },
+  "top_categories": ["Animals", "Food", "Technology", ...]
 }
+
+"count" — сколько файлов в папке.
+"top_tags" — 5 самых частых тегов среди файлов этой папки.
+
+━━━ КАК ЧИТАТЬ top_tags ━━━
+Теги — твой ГЛАВНЫЙ ориентир. Они говорят, что РЕАЛЬНО лежит в папке:
+  • "Technology/Queue" с top_tags ["sorting", "algorithm", "c"] — НЕ про очереди,
+    это программа сортировки. Должна быть Technology/Programming/Algorithms/Sorting.
+  • "Technology/UI" с top_tags ["langchain", "chatbot", "nlp"] — НЕ про UI,
+    это ML/NLP. Должна быть Technology/Programming/MachineLearning/NLP.
+  • "Sorting" с top_tags ["machine learning", "numpy", "pandas"] — НЕ Sorting,
+    это MachineLearning. Должна быть Technology/Programming/MachineLearning/Regression.
+
+Если имя папки ПРОТИВОРЕЧИТ top_tags — верь тегам.
 
 ━━━ ЧТО ИСКАТЬ ━━━
 
 1. merge — две папки одного смысла:
-   {"type": "merge", "from": "Natural", "to": "Nature", "reason": "дубли"}
+   {"type": "merge", "from": "Natural", "to": "Nature",
+    "reason": "дубли (top_tags совпадают)"}
 
-2. rename_folder — неудачное имя (или потерян родитель):
+2. rename_folder — неудачное имя (или потерян родитель, или имя
+   противоречит тегам):
    {"type": "rename_folder", "from": "UI", "to": "Technology/UI",
     "reason": "UI — подкатегория Technology"}
    {"type": "rename_folder", "from": "Technology/Programming/Sorting",
     "to": "Technology/Programming/Algorithms/Sorting",
     "reason": "Sorting — часть Algorithms"}
+   {"type": "rename_folder", "from": "Technology/Queue",
+    "to": "Technology/Programming/Algorithms/Sorting",
+    "reason": "top_tags: sorting, algorithm — это не очередь"}
 
-3. too_specific — папка на 1 файл:
+3. too_specific — папка на 1–2 файла, смысл покрыт более общей:
    {"type": "too_specific", "folder": "Animals/Kitten", "suggest": "Animals/Cats",
-    "files": [], "reason": "1 файл"}
+    "files": [], "reason": "1 файл, теги kitten"}
 
-4. split_oversized — папка с >8 файлов, которые можно разбить:
+4. split_oversized — папка с >5 файлов, которые МОЖНО разбить
+   по top_tags (если в top_tags видны разные темы):
    {"type": "split_oversized", "folder": "Technology/Programming",
-    "suggest": "по темам (Sorting, Graphs, DP, ML, Testing)",
-    "reason": "20+ файлов в одной папке"}
+    "suggest": "по темам из top_tags (Sorting, Graphs, DP, ...)",
+    "reason": "20+ файлов, разные темы"}
+
+━━━ ПРОВЕРКА SUGGEST ПО ТЕГАМ ━━━
+Перед тем как предложить "to" или "suggest" — сверься с top_tags:
+  • если top_tags содержат "sorting" → suggest должен содержать Sorting
+  • если top_tags содержат "primate" → suggest должен содержать Primates
+  • если top_tags содержат "machine learning" → suggest MachineLearning
+Не предлагай категорию, которую теги не подтверждают.
 
 ━━━ ЗАПРЕЩЁННЫЕ ВЕРХНИЕ КАТЕГОРИИ (orphan_top) ━━━
 Если эти слова в корне — потерян родитель, предложи rename_folder:
@@ -34,12 +66,37 @@ Graphs, DynamicProgramming, Computing, Networks, Hardware, Cars, Primates,
 Birds, Cats, Wildlife, Geology, NightSky, Landscape, Autumn, Cities,
 MachineLearning, DataStructures, Testing, MemoryManagement.
 
+Маппинг на правильного родителя:
+  ScienceFiction → Literature/ScienceFiction
+  Play/Plays → Literature/Plays
+  Novel/Novels → Literature/Novels
+  UI/UX → Technology/UI
+  Web → Technology/Web
+  Programming → Technology/Programming
+  Algorithm → Technology/Programming/Algorithms
+  Sorting → Technology/Programming/Algorithms/Sorting
+  Graphs → Technology/Programming/Algorithms/Graphs
+  MachineLearning → Technology/Programming/MachineLearning
+  DataStructures → Technology/Programming/DataStructures
+  Testing → Technology/Programming/Testing
+  MemoryManagement → Technology/Programming/MemoryManagement
+  Cars → Vehicles/Cars
+  Primates → Animals/Primates
+  Birds → Animals/Birds
+  Cats → Animals/Cats
+  Wildlife → Animals/Wildlife
+  Geology → Nature/Geology
+  NightSky → Nature/NightSky
+  Landscape → Nature/Landscape
+  Autumn → Nature/Autumn
+  Cities → Urban
+
 ━━━ НЕ ПРОБЛЕМА ━━━
-- Animals/Birds и Animals/Wildlife — норма.
+- Animals/Birds и Animals/Wildlife — норма (Birds — подкласс).
 - Food/FastFood и Food/Nutrition — разные подкатегории.
-- Other и Unsorted.
+- Other и Unsorted — не трогай.
 - Technology/Programming/Algorithms/Sorting — правильно.
-- 1-2 файла в глубокой папке — это норма, если они семантически верны.
+- 1–2 файла в глубокой папке — норма, если семантически верно.
 
 ━━━ ФОРМАТ ━━━
 { "ok": true, "issues": [] } или { "ok": false, "issues": [...] }
