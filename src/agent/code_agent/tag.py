@@ -139,8 +139,7 @@ def process_single_file(file_path: str, index_data: dict, skip_existing: bool = 
     if tags.startswith("Error"):
         print(f"ERROR: {tags}")
         return False
-    
-    print(f"OK")
+
     print(f"Tags: {tags}")
     
     index_data[file_name] = tags
@@ -225,8 +224,6 @@ def main():
     print(f"  Errors            : {error_count}")
     print(f"  Total in index    : {len(index_data)}")
     print(f"  Index saved to    : {os.path.join(directory, INDEX_FILE_NAME)}")
-    print("="*60)
-    
     input("\n Press Enter to exit")
 
 if __name__ == "__main__":
