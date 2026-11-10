@@ -13,7 +13,6 @@ if sys.platform.startswith('win'):
 
 MODEL_NAME = "qwen2.5:7b"
 INDEX_FILE_NAME = "code_index.json"
-
 SUPPORTED_EXTENSIONS = {
     '.py': 'python',
     '.c': 'c',
