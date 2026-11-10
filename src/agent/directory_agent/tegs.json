@@ -3,88 +3,157 @@
     "c",
     "array algorithm",
     "sorting algorithm",
-    "data structures",
     "memory management",
     "inputoutput operations"
   ],
   "1.c": [
     "c",
     "array algorithm",
-    "sorting algorithm",
     "quick select",
+    "sorting algorithm",
     "data structures",
-    "integer input validation",
-    "memory allocation",
-    "integer array manipulation"
+    "input validation",
+    "memory management",
+    "integer operations"
+  ],
+  "1.cpp": [
+    "c++",
+    "dfs",
+    "graph theory",
+    "connected components",
+    "array algorithm",
+    "data structures"
+  ],
+  "1.py": [
+    "python",
+    "subprocess",
+    "random",
+    "file io",
+    "comparison",
+    "testing",
+    "algorithm evaluation"
+  ],
+  "10.py": [
+    "python",
+    "datapreprocessing",
+    "datavisualization",
+    "numpy",
+    "pandas",
+    "datastructures",
+    "seaborn",
+    "matplotlib",
+    "machinelearning",
+    "correlationanalysis"
+  ],
+  "11.py": [
+    "python",
+    "linear regression",
+    "data structures",
+    "array algorithm",
+    "math",
+    "data visualization",
+    "machine learning",
+    "pandas",
+    "numpy",
+    "r2 score"
+  ],
+  "12.c": [
+    "c",
+    "string algorithm",
+    "hashing",
+    "dynamic programming",
+    "array algorithm",
+    "data structures"
+  ],
+  "13.c": [
+    "c",
+    "binaryexponentiation",
+    "math",
+    "inputoutput",
+    "recursion",
+    "arrayalgorithm"
+  ],
+  "13.py": [
+    "python",
+    "randomization",
+    "array algorithm",
+    "probability",
+    "simulation",
+    "arithmetic operations",
+    "finance",
+    "decision making"
+  ],
+  "14.c": [
+    "c",
+    "avl tree",
+    "balancing algorithm",
+    "tree algorithm",
+    "data structures"
   ],
   "1_2_10.c": [
     "c",
-    "input processing",
+    "inputoutput handling",
     "array algorithm",
-    "math",
-    "number theory",
-    "io operations"
+    "arithmetic operations",
+    "sport programming"
   ],
   "1_2_16.c": [
     "c",
     "number theory",
     "array algorithm",
-    "inputoutput operations",
-    "integer division",
+    "inputoutput",
     "sport programming"
   ],
   "1_2_23.c": [
     "c",
-    "math",
+    "number theory",
     "array algorithm",
     "floating point comparison",
-    "input validation",
-    "numerical stability"
+    "sport programming"
   ],
   "1_2_24.c": [
     "c",
+    "inputoutput",
     "array algorithm",
     "math",
-    "input processing",
-    "sport programming"
+    "data structures"
   ],
   "1_2_25.c": [
     "c",
-    "reading algorithm",
+    "inputoutput processing",
     "array algorithm",
-    "input handling",
-    "searching algorithm"
+    "sorting algorithm",
+    "math",
+    "data structures"
   ],
   "1_2_26.c": [
     "c",
     "array algorithm",
     "sorting algorithm",
     "math",
-    "inputoutput operations"
+    "data structures"
   ],
   "1_2_27.c": [
     "c",
     "array algorithm",
+    "binary search",
     "sorting algorithm",
-    "math",
-    "sport programming"
+    "math"
   ],
   "1_2_35.c": [
     "c",
     "math",
     "number theory",
     "array algorithm",
-    "sorting algorithm",
-    "floating point comparison"
+    "arithmetic progression"
   ],
   "1_2_4.c": [
     "c",
-    "input handling",
+    "inputoutput",
+    "arithmetic operations",
     "array algorithm",
-    "floating point",
-    "arithmetic",
-    "statistics",
-    "io operations"
+    "data structures",
+    "numeric algorithm"
   ],
   "1_2_5.c": [
     "c",
@@ -97,249 +166,544 @@
     "array algorithm",
     "sorting algorithm",
     "data structures",
-    "shift operation",
-    "input validation",
     "memory management",
-    "integer operations"
+    "inputoutput operations",
+    "cyclic shift"
   ],
   "2.c": [
     "c",
     "merge sort",
+    "counting sort",
     "array algorithm",
-    "sorting algorithm",
-    "counting inversions"
-  ],
-  "3.c": [
-    "c",
-    "array algorithm",
-    "sorting algorithm",
     "data structures",
-    "pseudo sorting"
+    "sorting algorithm"
   ],
-  "a.cpp": [
-    "c++",
-    "graph theory",
-    "dfs",
-    "undirected graph",
-    "connected components",
-    "data structures",
-    "algorithm",
-    "sport programming"
-  ],
-  "avl_tree.c": [
-    "c",
-    "avl tree",
-    "balancing algorithm",
-    "binary search tree",
-    "data structures",
-    "tree algorithm"
-  ],
-  "binpow.c": [
-    "c",
-    "binaryexponentiation",
-    "math",
-    "inputvalidation",
-    "commandlinearguments",
-    "arithmeticoperations"
-  ],
-  "checker.py": [
-    "python",
-    "subprocess",
-    "random",
-    "file io",
-    "comparison",
-    "testing",
-    "sport programming"
-  ],
-  "checker2.py": [
+  "2.py": [
     "python",
     "subprocess",
     "random",
     "numba",
     "file io",
     "testing",
+    "algorithm verification",
     "array algorithm"
   ],
-  "checker3.py": [
+  "3.c": [
+    "c",
+    "array algorithm",
+    "sorting algorithm",
+    "data structures",
+    "pseudo sorting",
+    "input validation",
+    "memory management",
+    "sport programming"
+  ],
+  "3.py": [
     "python",
     "file-i-o",
-    "random",
-    "array algorithm",
-    "graph theory",
+    "random-number-generation",
+    "array-algorithm",
+    "graph-theory",
     "testing",
-    "subprocess"
+    "subprocess",
+    "sport-programming"
   ],
-  "competition.cpp": [
+  "4.c": [
+    "c",
+    "memory management",
+    "array algorithm",
+    "sorting algorithm",
+    "data structures"
+  ],
+  "4.cpp": [
     "c++",
     "dynamic programming",
-    "bit manipulation",
-    "combinatorial algorithm",
-    "array algorithm"
-  ],
-  "example.cpp": [
-    "c++",
-    "dsu",
-    "union-find",
-    "inputoutput",
-    "data structures",
-    "graph theory"
-  ],
-  "exotermic100.py": [
-    "python",
-    "randomization",
+    "bitmask dp",
     "array algorithm",
-    "binary search",
-    "probability",
-    "simulation",
-    "finance",
-    "math",
-    "algorithm analysis"
+    "combinatorics",
+    "optimization"
   ],
-  "hash_string.c": [
+  "5.c": [
     "c",
-    "string algorithm",
-    "hash function",
     "array algorithm",
-    "data structures",
-    "sport programming"
-  ],
-  "linReg.py": [
-    "python",
-    "linearregression",
-    "datacleaning",
-    "dataanalysis",
-    "arrayalgorithm",
-    "machinelearning",
-    "datavisualization",
-    "datasetprocessing",
-    "statistics",
-    "numpy",
-    "pandas",
-    "matplotlib",
-    "seaborn"
-  ],
-  "matrix.py": [
-    "python",
-    "dataframe",
-    "array algorithm",
-    "data visualization",
-    "correlation",
-    "heatmap",
-    "machine learning",
-    "data cleaning",
-    "numpy",
-    "pandas"
-  ],
-  "merge_sort.c": [
-    "c",
     "sorting algorithm",
-    "merge sort",
-    "array algorithm",
+    "quick sort",
     "memory management",
-    "input handling"
+    "input validation"
   ],
-  "merge_sort_iter.c": [
-    "c",
-    "sorting algorithm",
-    "array algorithm",
-    "merge sort",
-    "memory allocation",
-    "input validation",
-    "integer operations",
-    "binary search"
-  ],
-  "orkestrator.py": [
-    "python",
-    "langchain",
-    "chatbot",
-    "state machine",
-    "graph theory",
-    "natural language processing",
-    "typeddict",
-    "annotated",
-    "sport programming"
-  ],
-  "quad.c": [
+  "6.c": [
     "c",
     "quadratic equation",
     "math",
     "number theory",
     "array algorithm"
   ],
-  "quick_sort.c": [
+  "7.py": [
+    "python",
+    "langchain",
+    "graph algorithm",
+    "state machine",
+    "chatbot",
+    "natural language processing",
+    "typing annotations",
+    "function composition"
+  ],
+  "8.c": [
+    "c",
+    "merge sort",
+    "sorting algorithm",
+    "array algorithm",
+    "dynamic programming",
+    "memory management",
+    "inputoutput operations"
+  ],
+  "9.c": [
     "c",
     "sorting algorithm",
     "array algorithm",
-    "quick sort",
-    "memory management",
-    "input handling"
+    "merge sort",
+    "memory allocation",
+    "input validation",
+    "integer operations"
+  ],
+  "example.cpp": [
+    "c++",
+    "dsu",
+    "union-find",
+    "data structures",
+    "graph theory",
+    "array algorithm"
   ],
   "test.cpp": [
     "c++",
     "orderedset",
-    "segmenttree",
-    "sortingalgorithm",
-    "arrayalgorithm",
-    "binarysearch",
-    "numbertheory",
-    "sportprogramming"
+    "lowerbound",
+    "orderofkey",
+    "set",
+    "number theory",
+    "array algorithm",
+    "data structures"
   ],
   "test.py": [
     "python",
-    "randomization",
-    "array algorithm",
-    "binary search",
-    "math",
-    "simulation"
+    "arrayalgorithm",
+    "randomnumbergeneration",
+    "binarysearch",
+    "datastructures",
+    "arithmeticoperations",
+    "probabilityandstatistics"
   ],
   "test1.cpp": [
     "c++",
     "dynamic programming",
     "array algorithm",
     "number theory",
+    "math",
     "sport programming"
   ],
   "test2.cpp": [
     "c++",
-    "dynamic programming",
     "math",
     "number theory",
     "array algorithm",
-    "binary search",
+    "dynamic programming",
     "greedy algorithm",
     "sport programming"
   ],
   "test2.py": [
     "python",
     "arrayalgorithm",
-    "binarysearch",
+    "randomalgorithm",
     "dynamicprogramming",
-    "math",
-    "sportprogramming"
+    "financealgorithm",
+    "probabilityalgorithm"
   ],
   "test3.cpp": [
     "c++",
     "graph theory",
-    "dynamic programming",
+    "dfs",
+    "modular arithmetic",
     "number theory",
     "array algorithm",
     "data structures"
   ],
   "test4.cpp": [
     "c++",
-    "dfs",
     "graph theory",
-    "array algorithm",
-    "data structures",
-    "set",
-    "unorderedset",
-    "math"
+    "depth-first search",
+    "unordered set",
+    "segment tree",
+    "array algorithm"
   ],
-  "universal_swap.c": [
-    "c",
-    "swap",
-    "array algorithm",
-    "memory management",
-    "c programming"
-  ]
+    "image-18-3848852218.png": [
+        "php",
+        "wordpress",
+        "navigation",
+        "menu"
+    ],
+    "OIP-1131641378.jpg": [
+        "classic car",
+        "yellow",
+        "front view",
+        "urban setting"
+    ],
+    "OIP-1301380276.jpg": [
+        "night sky",
+        "reflection",
+        "lake"
+    ],
+    "OIP-1403247518.jpg": [
+        "tiger",
+        "white tiger",
+        "wildlife",
+        "interaction"
+    ],
+    "OIP-1785079936.jpg": [
+        "squirrel",
+        "flowers",
+        "spring",
+        "wildlife"
+    ],
+    "OIP-2083824764.jpg": [
+        "lava rock",
+        "volcanic rock",
+        "geology",
+        "nature"
+    ],
+    "OIP-2214996598.jpg": [
+        "sports car",
+        "monochrome",
+        "dramatic sky",
+        "urban setting"
+    ],
+    "OIP-2260214632.jpg": [
+        "chimpanzees",
+        "social behavior",
+        "primate"
+    ],
+    "OIP-2335609016.jpg": [
+        "sports car",
+        "fall foliage",
+        "sunset"
+    ],
+    "OIP-2370343695.jpg": [
+        "squirrel",
+        "reflection",
+        "nature",
+        "flower"
+    ],
+    "OIP-239426286.jpg": [
+        "yellow car",
+        "fall foliage",
+        "autumn scene"
+    ],
+    "OIP-2438565100.jpg": [
+        "arraylist",
+        "java",
+        "programming"
+    ],
+    "OIP-244241318.jpg": [
+        "cursor",
+        "black background",
+        "mouse pointer"
+    ],
+    "OIP-2845334056.jpg": [
+        "owl",
+        "family",
+        "nest"
+    ],
+    "OIP-2964458374.jpg": [
+        "cruise",
+        "mountains",
+        "landscape",
+        "water"
+    ],
+    "OIP-3025030654.jpg": [
+        "moonlight",
+        "forest",
+        "serenity"
+    ],
+    "OIP-31123916.jpg": [
+        "concrete",
+        "mixing",
+        "materials",
+        "construction"
+    ],
+    "OIP-3333718104.jpg": [
+        "document",
+        "text",
+        "layout"
+    ],
+    "OIP-3430160128.jpg": [
+        "lion",
+        "wildlife",
+        "nature"
+    ],
+    "OIP-3456491269 (1).jpg": [
+        "hamburger",
+        "fast food",
+        "cheeseburger",
+        "bun"
+    ],
+    "OIP-3456491269.jpg": [
+        "hamburger",
+        "fast food",
+        "cheeseburger",
+        "bun"
+    ],
+    "OIP-3461913213.jpg": [
+        "black",
+        "background",
+        "text",
+        "dark"
+    ],
+    "OIP-3544711660.jpg": [
+        "video game",
+        "forest",
+        "character"
+    ],
+    "OIP-3547518443.jpg": [
+        "leopard",
+        "wildlife",
+        "animal"
+    ],
+    "OIP-361479000.jpg": [
+        "medieval",
+        "armor",
+        "character",
+        "outdoor"
+    ],
+    "OIP-3630885992.jpg": [
+        "fast food",
+        "desserts",
+        "snacks"
+    ],
+    "OIP-3783182456.jpg": [
+        "blueberries",
+        "fruit",
+        "bowl",
+        "mint"
+    ],
+    "OIP-3951720394.jpg": [
+        "blue screen",
+        "error",
+        "computer"
+    ],
+    "OIP-4103340342.jpg": [
+        "heart-shaped bowls",
+        "healthy foods",
+        "dietary diversity",
+        "nutrition"
+    ],
+    "OIP.webp": [
+        "red hair",
+        "glasses",
+        "t-shirt",
+        "cartoon character",
+        "pointing"
+    ],
+    "qIw79-2156140847.png": [
+        "html",
+        "form",
+        "input",
+        "button"
+    ],
+    "qwee.webp": [
+        "frosty",
+        "morning",
+        "landscape",
+        "reflection"
+    ],
+    "R.jpg": [
+        "owl",
+        "forest",
+        "perched",
+        "wildlife"
+    ],
+    "SBR50949-2-1-1200x0-c-default.jpg": [
+        "wolves",
+        "snow",
+        "wildlife"
+    ],
+    "vecteezy_adorable-baby-cat-with-striking-blue-eyes-sitting-on-a-soft_57172736.png": [
+        "kitten",
+        "blue eyes",
+        "adorable",
+        "striped fur"
+    ],
+    "asimov_robot.txt": [
+        "science fiction",
+        "robots",
+        "laws"
+    ],
+    "burmalda.csv": [
+        "gaming",
+        "esports",
+        "team"
+    ],
+    "meeting_notes.md": [
+        "meeting",
+        "agenda",
+        "action_items"
+    ],
+    "shakespeare_hamlet.txt": [
+        "literature",
+        "play",
+        "philosophy"
+    ],
+    "text copy 10.txt": [
+        "biography",
+        "soviet history",
+        "political figure"
+    ],
+    "text copy 11.txt": [
+        "biography",
+        "soviet history",
+        "political figure"
+    ],
+    "text copy 12.txt": [
+        "queue",
+        "waiting",
+        "computing"
+    ],
+    "text copy 13.txt": [
+        "definition",
+        "dictionary",
+        "language"
+    ],
+    "text copy 14.txt": [
+        "politics",
+        "diplomacy",
+        "conflict"
+    ],
+    "text copy 15.txt": [
+        "diplomacy",
+        "international relations",
+        "trade agreements"
+    ],
+    "text copy 16.txt": [
+        "opinion",
+        "food",
+        "cultural"
+    ],
+    "text copy 17.txt": [
+        "algorithm",
+        "data structure",
+        "computer science"
+    ],
+    "text copy 18.txt": [
+        "algorithm",
+        "data structure",
+        "computer science"
+    ],
+    "text copy 19.txt": [
+        "algorithm",
+        "minimization",
+        "function"
+    ],
+    "text copy 2.txt": [
+        "windows",
+        "technical",
+        "troubleshooting"
+    ],
+    "text copy 20.txt": [
+        "network",
+        "traffic",
+        "routing"
+    ],
+    "text copy 21.txt": [
+        "network",
+        "security",
+        "programming"
+    ],
+    "text copy 22.txt": [
+        "strategy",
+        "automation",
+        "testing"
+    ],
+    "text copy 23.txt": [
+        "security",
+        "network",
+        "instructions"
+    ],
+    "text copy 24.txt": [
+        "literature",
+        "description",
+        "setting"
+    ],
+    "text copy 25.txt": [
+        "fiction",
+        "rural setting",
+        "love story"
+    ],
+    "text copy 26.txt": [
+        "novel",
+        "literature",
+        "social commentary"
+    ],
+    "text copy 27.txt": [
+        "novel",
+        "literature",
+        "fiction"
+    ],
+    "text copy 28.txt": [
+        "city geography",
+        "waterways",
+        "urban infrastructure"
+    ],
+    "text copy 29.txt": [
+        "population",
+        "city",
+        "tourism"
+    ],
+    "text copy 3.txt": [
+        "islam",
+        "history",
+        "russia"
+    ],
+    "text copy 30.txt": [
+        "computer",
+        "diagnosis",
+        "technical"
+    ],
+    "text copy 4.txt": [
+        "islam",
+        "history",
+        "dagestan"
+    ],
+    "text copy 5.txt": [
+        "history",
+        "islam",
+        "russia"
+    ],
+    "text copy 6.txt": [
+        "history",
+        "religion",
+        "politics"
+    ],
+    "text copy 7.txt": [
+        "programming",
+        "memory",
+        "text processing"
+    ],
+    "text copy 8.txt": [
+        "memory",
+        "leaks",
+        "programming"
+    ],
+    "text copy 9.txt": [
+        "memory management",
+        "programming",
+        "system programming"
+    ],
+    "text copy.txt": [
+        "city",
+        "history",
+        "administration"
+    ],
+    "text.txt": [
+        "travel",
+        "vacation",
+        "sightseeing"
+    ]
 }

@@ -9,13 +9,82 @@
   ],
   "1.c": [
     "c",
+    "quickselect",
+    "sortingalgorithm",
+    "arrayalgorithm",
+    "datastructures",
+    "inputhandling"
+  ],
+  "1.cpp": [
+    "c++",
+    "graph theory",
+    "depth-first search",
+    "connected components",
+    "bridge finding",
+    "undirected graph"
+  ],
+  "1.py": [
+    "python",
+    "subprocess",
+    "random",
+    "file io",
+    "comparison",
+    "executable",
+    "algorithm testing",
+    "sport programming"
+  ],
+  "10.py": [
+    "python",
+    "dataframe",
+    "csv",
+    "datacleaning",
+    "correlation",
+    "heatmap",
+    "datavisualization",
+    "machinelearning",
+    "dataanalysis"
+  ],
+  "11.py": [
+    "python",
+    "linearregression",
+    "datacleaning",
+    "datavisualization",
+    "machinelearning",
+    "arrayalgorithm",
+    "statisticalanalysis"
+  ],
+  "12.c": [
+    "c",
+    "string algorithm",
+    "hash function",
     "array algorithm",
-    "sorting algorithm",
-    "quick select",
     "data structures",
-    "integer input validation",
-    "memory allocation",
-    "integer array manipulation"
+    "number theory",
+    "sport programming"
+  ],
+  "13.c": [
+    "c",
+    "binaryexponentiation",
+    "math",
+    "inputoutput",
+    "recursion",
+    "arithmeticoperations"
+  ],
+  "13.py": [
+    "python",
+    "random",
+    "array algorithm",
+    "binary search",
+    "math",
+    "finance"
+  ],
+  "14.c": [
+    "c",
+    "avl tree",
+    "binary search tree",
+    "data structures",
+    "tree rotations",
+    "balancing algorithm"
   ],
   "1_2_10.c": [
     "c",
@@ -23,68 +92,66 @@
     "array algorithm",
     "math",
     "number theory",
-    "io operations"
+    "counting"
   ],
   "1_2_16.c": [
     "c",
     "number theory",
     "array algorithm",
     "inputoutput operations",
-    "integer division",
     "sport programming"
   ],
   "1_2_23.c": [
     "c",
-    "math",
+    "number theory",
     "array algorithm",
+    "input processing",
     "floating point comparison",
-    "input validation",
-    "numerical stability"
+    "sport programming"
   ],
   "1_2_24.c": [
     "c",
     "array algorithm",
+    "input parsing",
     "math",
-    "input processing",
     "sport programming"
   ],
   "1_2_25.c": [
-    "c",
-    "reading algorithm",
-    "array algorithm",
-    "input handling",
-    "searching algorithm"
-  ],
-  "1_2_26.c": [
     "c",
     "array algorithm",
     "sorting algorithm",
     "math",
     "inputoutput operations"
   ],
+  "1_2_26.c": [
+    "c",
+    "sortingalgorithm",
+    "arrayalgorithm",
+    "math",
+    "inputoutput"
+  ],
   "1_2_27.c": [
     "c",
-    "array algorithm",
-    "sorting algorithm",
+    "sortingalgorithm",
+    "arrayalgorithm",
     "math",
-    "sport programming"
+    "inputoutputoperations"
   ],
   "1_2_35.c": [
     "c",
     "math",
     "number theory",
     "array algorithm",
-    "sorting algorithm",
-    "floating point comparison"
+    "floating point comparison",
+    "arithmetic progression"
   ],
   "1_2_4.c": [
     "c",
-    "input handling",
+    "input processing",
+    "arithmetic operations",
     "array algorithm",
-    "floating point",
-    "arithmetic",
-    "statistics",
-    "io operations"
+    "io operations",
+    "basic programming"
   ],
   "1_2_5.c": [
     "c",
@@ -97,192 +164,114 @@
     "array algorithm",
     "sorting algorithm",
     "data structures",
-    "shift operation",
-    "input validation",
-    "memory management",
-    "integer operations"
+    "cyclic shift"
   ],
   "2.c": [
     "c",
     "merge sort",
-    "array algorithm",
     "sorting algorithm",
-    "counting inversions"
+    "array algorithm",
+    "data structures",
+    "number theory"
+  ],
+  "2.py": [
+    "python",
+    "file-i-o",
+    "subprocess",
+    "random",
+    "numba",
+    "testing",
+    "array algorithm"
   ],
   "3.c": [
     "c",
     "array algorithm",
     "sorting algorithm",
-    "data structures",
-    "pseudo sorting"
+    "pseudo-sorting",
+    "memory management",
+    "input validation",
+    "integer operations"
   ],
-  "a.cpp": [
-    "c++",
-    "graph theory",
-    "dfs",
-    "undirected graph",
-    "connected components",
-    "data structures",
-    "algorithm",
-    "sport programming"
-  ],
-  "avl_tree.c": [
-    "c",
-    "avl tree",
-    "balancing algorithm",
-    "binary search tree",
-    "data structures",
-    "tree algorithm"
-  ],
-  "binpow.c": [
-    "c",
-    "binaryexponentiation",
-    "math",
-    "inputvalidation",
-    "commandlinearguments",
-    "arithmeticoperations"
-  ],
-  "checker.py": [
-    "python",
-    "subprocess",
-    "random",
-    "file io",
-    "comparison",
-    "testing",
-    "sport programming"
-  ],
-  "checker2.py": [
-    "python",
-    "subprocess",
-    "random",
-    "numba",
-    "file io",
-    "testing",
-    "array algorithm"
-  ],
-  "checker3.py": [
+  "3.py": [
     "python",
     "file-i-o",
-    "random",
-    "array algorithm",
-    "graph theory",
-    "testing",
-    "subprocess"
+    "random-number-generation",
+    "array-algorithm",
+    "graph-theory",
+    "testing-algorithm"
   ],
-  "competition.cpp": [
-    "c++",
-    "dynamic programming",
-    "bit manipulation",
-    "combinatorial algorithm",
+  "4.c": [
+    "c",
+    "memory management",
+    "pointer manipulation",
+    "swap algorithm",
     "array algorithm"
   ],
-  "example.cpp": [
+  "4.cpp": [
     "c++",
-    "dsu",
-    "union-find",
-    "inputoutput",
-    "data structures",
-    "graph theory"
-  ],
-  "exotermic100.py": [
-    "python",
-    "randomization",
-    "array algorithm",
-    "binary search",
-    "probability",
-    "simulation",
-    "finance",
-    "math",
-    "algorithm analysis"
-  ],
-  "hash_string.c": [
-    "c",
-    "string algorithm",
-    "hash function",
-    "array algorithm",
-    "data structures",
-    "sport programming"
-  ],
-  "linReg.py": [
-    "python",
-    "linearregression",
-    "datacleaning",
-    "dataanalysis",
+    "dynamicprogramming",
+    "bitmasks",
     "arrayalgorithm",
-    "machinelearning",
-    "datavisualization",
-    "datasetprocessing",
-    "statistics",
-    "numpy",
-    "pandas",
-    "matplotlib",
-    "seaborn"
+    "math",
+    "combinatorics"
   ],
-  "matrix.py": [
-    "python",
-    "dataframe",
-    "array algorithm",
-    "data visualization",
-    "correlation",
-    "heatmap",
-    "machine learning",
-    "data cleaning",
-    "numpy",
-    "pandas"
-  ],
-  "merge_sort.c": [
+  "5.c": [
     "c",
-    "sorting algorithm",
-    "merge sort",
     "array algorithm",
-    "memory management",
-    "input handling"
-  ],
-  "merge_sort_iter.c": [
-    "c",
     "sorting algorithm",
-    "array algorithm",
-    "merge sort",
-    "memory allocation",
-    "input validation",
-    "integer operations",
-    "binary search"
+    "quick sort"
   ],
-  "orkestrator.py": [
-    "python",
-    "langchain",
-    "chatbot",
-    "state machine",
-    "graph theory",
-    "natural language processing",
-    "typeddict",
-    "annotated",
-    "sport programming"
-  ],
-  "quad.c": [
+  "6.c": [
     "c",
     "quadratic equation",
     "math",
     "number theory",
     "array algorithm"
   ],
-  "quick_sort.c": [
+  "7.py": [
+    "python",
+    "langgraph",
+    "statemachine",
+    "graphalgorithm",
+    "chatbot",
+    "naturallanguageprocessing",
+    "datastructures",
+    "typingannotations",
+    "sportprogramming"
+  ],
+  "8.c": [
     "c",
     "sorting algorithm",
+    "merge sort",
     "array algorithm",
-    "quick sort",
     "memory management",
-    "input handling"
+    "input processing"
+  ],
+  "9.c": [
+    "c",
+    "array algorithm",
+    "sorting algorithm",
+    "merge sort",
+    "memory allocation",
+    "input validation",
+    "integer operations"
+  ],
+  "example.cpp": [
+    "c++",
+    "dsu",
+    "disjoint-set",
+    "graph theory",
+    "array algorithm"
   ],
   "test.cpp": [
     "c++",
     "orderedset",
-    "segmenttree",
+    "binarysearchtree",
+    "set",
+    "algorithm",
     "sortingalgorithm",
-    "arrayalgorithm",
-    "binarysearch",
-    "numbertheory",
-    "sportprogramming"
+    "math",
+    "arrayalgorithm"
   ],
   "test.py": [
     "python",
@@ -290,7 +279,8 @@
     "array algorithm",
     "binary search",
     "math",
-    "simulation"
+    "simulation",
+    "data structures"
   ],
   "test1.cpp": [
     "c++",
@@ -301,45 +291,38 @@
   ],
   "test2.cpp": [
     "c++",
-    "dynamic programming",
     "math",
     "number theory",
+    "dynamic programming",
     "array algorithm",
-    "binary search",
-    "greedy algorithm",
     "sport programming"
   ],
   "test2.py": [
     "python",
-    "arrayalgorithm",
-    "binarysearch",
-    "dynamicprogramming",
+    "randomization",
+    "array algorithm",
+    "binary search",
+    "floating point",
     "math",
-    "sportprogramming"
+    "simulation",
+    "probability",
+    "sport programming"
   ],
   "test3.cpp": [
     "c++",
     "graph theory",
-    "dynamic programming",
+    "dfs",
+    "modular arithmetic",
     "number theory",
     "array algorithm",
     "data structures"
   ],
   "test4.cpp": [
     "c++",
-    "dfs",
     "graph theory",
-    "array algorithm",
-    "data structures",
-    "set",
+    "depth-first search",
     "unorderedset",
-    "math"
-  ],
-  "universal_swap.c": [
-    "c",
-    "swap",
-    "array algorithm",
-    "memory management",
-    "c programming"
+    "dynamic programming",
+    "array algorithm"
   ]
 }
