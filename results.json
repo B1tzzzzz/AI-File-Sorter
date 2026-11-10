@@ -1,4 +1,10 @@
 {
+    "image-18-3848852218.png": [
+        "php",
+        "wordpress",
+        "navigation",
+        "menu"
+    ],
     "OIP-1131641378.jpg": [
         "classic car",
         "yellow",
@@ -20,7 +26,7 @@
         "squirrel",
         "flowers",
         "spring",
-        "nature"
+        "wildlife"
     ],
     "OIP-2083824764.jpg": [
         "lava rock",
@@ -37,8 +43,7 @@
     "OIP-2260214632.jpg": [
         "chimpanzees",
         "social behavior",
-        "primate",
-        "nature"
+        "primate"
     ],
     "OIP-2335609016.jpg": [
         "sports car",
@@ -74,7 +79,8 @@
     "OIP-2964458374.jpg": [
         "cruise",
         "mountains",
-        "landscape"
+        "landscape",
+        "water"
     ],
     "OIP-3025030654.jpg": [
         "moonlight",
@@ -88,15 +94,14 @@
         "construction"
     ],
     "OIP-3333718104.jpg": [
-        "text editor",
-        "ruler",
-        "document"
+        "document",
+        "text",
+        "layout"
     ],
     "OIP-3430160128.jpg": [
         "lion",
         "wildlife",
-        "nature",
-        "animal"
+        "nature"
     ],
     "OIP-3456491269 (1).jpg": [
         "hamburger",
@@ -108,11 +113,12 @@
         "hamburger",
         "fast food",
         "cheeseburger",
-        "food"
+        "bun"
     ],
     "OIP-3461913213.jpg": [
         "black",
         "background",
+        "text",
         "dark"
     ],
     "OIP-3544711660.jpg": [
@@ -150,8 +156,8 @@
     "OIP-4103340342.jpg": [
         "heart-shaped bowls",
         "healthy foods",
-        "nutrition",
-        "diet"
+        "dietary diversity",
+        "nutrition"
     ],
     "OIP.webp": [
         "red hair",
@@ -159,6 +165,12 @@
         "t-shirt",
         "cartoon character",
         "pointing"
+    ],
+    "qIw79-2156140847.png": [
+        "html",
+        "form",
+        "input",
+        "button"
     ],
     "qwee.webp": [
         "frosty",
@@ -176,5 +188,11 @@
         "wolves",
         "snow",
         "wildlife"
+    ],
+    "vecteezy_adorable-baby-cat-with-striking-blue-eyes-sitting-on-a-soft_57172736.png": [
+        "kitten",
+        "blue eyes",
+        "adorable",
+        "striped fur"
     ]
 }

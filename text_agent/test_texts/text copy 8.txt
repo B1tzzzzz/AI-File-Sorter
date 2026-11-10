@@ -1,0 +1,16 @@
+Memory leaks
+On almost every error return (return 12;), you leak previously allocated memory. For example:
+
+If s2.str = malloc(...) fails, s1.str is leaked.
+
+If basePower fails, s1.str and s2.str are leaked.
+
+If ans fails, basePower, s1.str, s2.str are leaked.
+
+If hash1 fails, ans, basePower, s1.str, s2.str are leaked.
+
+If push_back fails, the original string buffers are leaked.
+
+Also, realloc failure in push_back leaves the original block intact, but you return without freeing it.
+
+These leaks are not critical for a short-lived program (the OS reclaims memory on exit), but they are still bugs.

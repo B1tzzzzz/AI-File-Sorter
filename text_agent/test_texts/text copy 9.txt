@@ -1,0 +1,32 @@
+No, exit does not free heap memory that you allocated with malloc/calloc/realloc. It does not walk the heap and call free on every outstanding block.
+
+What exit does:
+
+Calls functions registered with atexit (in reverse order).
+
+Flushes and closes all open stdio streams (FILE*).
+
+Removes temporary files created by tmpfile.
+
+Terminates the process and returns a status to the OS.
+
+Then the operating system reclaims all memory owned by the process — including any leaked heap blocks. So from the OS's perspective, there is no leak after the process ends. The memory is returned to the system.
+
+So does exit “avoid” memory leaks?
+For a program that is about to terminate anyway: Yes, in practice the leaks don't matter. The OS cleans up. This is why many small programs don't bother freeing everything before exit.
+
+For a program that continues running: No. exit terminates the whole process, so it's not a way to avoid leaks in a program that is supposed to keep running.
+
+For a library or reusable module: Absolutely not. Calling exit from a library kills the host application, which is usually unacceptable. You should free your resources and return an error code instead.
+
+Important caveat: atexit handlers
+If you register cleanup functions with atexit, those will run before termination. You could theoretically register a function that frees all your global allocations. But that's not automatic, and it's rarely done for every malloc. It's more common for global resources like open files or shared memory.
+
+Summary
+exit does not free heap memory.
+
+The OS reclaims all memory when the process ends.
+
+So leaks become irrelevant after exit, but exit is not a substitute for proper cleanup if the program continues or if you're writing a library.
+
+For clean code, especially in reusable functions, prefer free and return error codes. Use exit only when you genuinely want to terminate the entire program.

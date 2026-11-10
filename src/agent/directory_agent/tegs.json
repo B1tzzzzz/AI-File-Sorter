@@ -1,4 +1,179 @@
 {
+    "asimov_robot.txt": [
+        "science fiction",
+        "robots",
+        "laws"
+    ],
+    "burmalda.csv": [
+        "gaming",
+        "esports",
+        "team"
+    ],
+    "meeting_notes.md": [
+        "meeting",
+        "agenda",
+        "action_items"
+    ],
+    "shakespeare_hamlet.txt": [
+        "literature",
+        "play",
+        "philosophy"
+    ],
+    "text copy 10.txt": [
+        "biography",
+        "soviet history",
+        "political figure"
+    ],
+    "text copy 11.txt": [
+        "biography",
+        "soviet history",
+        "political figure"
+    ],
+    "text copy 12.txt": [
+        "queue",
+        "waiting",
+        "computing"
+    ],
+    "text copy 13.txt": [
+        "definition",
+        "dictionary",
+        "language"
+    ],
+    "text copy 14.txt": [
+        "politics",
+        "diplomacy",
+        "conflict"
+    ],
+    "text copy 15.txt": [
+        "diplomacy",
+        "international relations",
+        "trade agreements"
+    ],
+    "text copy 16.txt": [
+        "opinion",
+        "food",
+        "cultural"
+    ],
+    "text copy 17.txt": [
+        "algorithm",
+        "data structure",
+        "computer science"
+    ],
+    "text copy 18.txt": [
+        "algorithm",
+        "data structure",
+        "computer science"
+    ],
+    "text copy 19.txt": [
+        "algorithm",
+        "minimization",
+        "function"
+    ],
+    "text copy 2.txt": [
+        "windows",
+        "technical",
+        "troubleshooting"
+    ],
+    "text copy 20.txt": [
+        "network",
+        "traffic",
+        "routing"
+    ],
+    "text copy 21.txt": [
+        "network",
+        "security",
+        "programming"
+    ],
+    "text copy 22.txt": [
+        "strategy",
+        "automation",
+        "testing"
+    ],
+    "text copy 23.txt": [
+        "security",
+        "network",
+        "instructions"
+    ],
+    "text copy 24.txt": [
+        "literature",
+        "description",
+        "setting"
+    ],
+    "text copy 25.txt": [
+        "fiction",
+        "rural setting",
+        "love story"
+    ],
+    "text copy 26.txt": [
+        "novel",
+        "literature",
+        "social commentary"
+    ],
+    "text copy 27.txt": [
+        "novel",
+        "literature",
+        "fiction"
+    ],
+    "text copy 28.txt": [
+        "city geography",
+        "waterways",
+        "urban infrastructure"
+    ],
+    "text copy 29.txt": [
+        "population",
+        "city",
+        "tourism"
+    ],
+    "text copy 3.txt": [
+        "islam",
+        "history",
+        "russia"
+    ],
+    "text copy 30.txt": [
+        "computer",
+        "diagnosis",
+        "technical"
+    ],
+    "text copy 4.txt": [
+        "islam",
+        "history",
+        "dagestan"
+    ],
+    "text copy 5.txt": [
+        "history",
+        "islam",
+        "russia"
+    ],
+    "text copy 6.txt": [
+        "history",
+        "religion",
+        "politics"
+    ],
+    "text copy 7.txt": [
+        "programming",
+        "memory",
+        "text processing"
+    ],
+    "text copy 8.txt": [
+        "memory",
+        "leaks",
+        "programming"
+    ],
+    "text copy 9.txt": [
+        "memory management",
+        "programming",
+        "system programming"
+    ],
+    "text copy.txt": [
+        "city",
+        "history",
+        "administration"
+    ],
+    "text.txt": [
+        "travel",
+        "vacation",
+        "sightseeing"
+    ],
     "image-18-3848852218.png": [
         "php",
         "wordpress",
@@ -43,8 +218,7 @@
     "OIP-2260214632.jpg": [
         "chimpanzees",
         "social behavior",
-        "primate",
-        "nature"
+        "primate"
     ],
     "OIP-2335609016.jpg": [
         "sports car",
@@ -80,7 +254,8 @@
     "OIP-2964458374.jpg": [
         "cruise",
         "mountains",
-        "landscape"
+        "landscape",
+        "water"
     ],
     "OIP-3025030654.jpg": [
         "moonlight",
@@ -94,15 +269,14 @@
         "construction"
     ],
     "OIP-3333718104.jpg": [
-        "text editor",
-        "ruler",
-        "document"
+        "document",
+        "text",
+        "layout"
     ],
     "OIP-3430160128.jpg": [
         "lion",
         "wildlife",
-        "nature",
-        "animal"
+        "nature"
     ],
     "OIP-3456491269 (1).jpg": [
         "hamburger",
@@ -114,11 +288,12 @@
         "hamburger",
         "fast food",
         "cheeseburger",
-        "food"
+        "bun"
     ],
     "OIP-3461913213.jpg": [
         "black",
         "background",
+        "text",
         "dark"
     ],
     "OIP-3544711660.jpg": [
@@ -156,8 +331,8 @@
     "OIP-4103340342.jpg": [
         "heart-shaped bowls",
         "healthy foods",
-        "nutrition",
-        "diet"
+        "dietary diversity",
+        "nutrition"
     ],
     "OIP.webp": [
         "red hair",
@@ -193,106 +368,6 @@
         "kitten",
         "blue eyes",
         "adorable",
-        "striped"
-    ],
-        "asimov_robot.txt": [
-        "science fiction",
-        "robots",
-        "laws of robotics"
-    ],
-    "burmalda.csv": [
-        "gaming",
-        "esports",
-        "team"
-    ],
-    "meeting_notes.md": [
-        "meeting",
-        "agenda",
-        "action_items"
-    ],
-    "shakespeare_hamlet.txt": [
-        "literature",
-        "play",
-        "drama"
-    ],
-    "text copy 16.txt": [
-        "opinion",
-        "food",
-        "cultural"
-    ],
-    "text copy 17.txt": [
-        "algorithm",
-        "data structure",
-        "computer science"
-    ],
-    "text copy 18.txt": [
-        "algorithm",
-        "data structure",
-        "computer science"
-    ],
-    "text copy 19.txt": [
-        "algorithm",
-        "minimization",
-        "function"
-    ],
-    "text copy 20.txt": [
-        "network",
-        "traffic",
-        "routing"
-    ],
-    "text copy 21.txt": [
-        "network",
-        "security",
-        "programming"
-    ],
-    "text copy 22.txt": [
-        "strategy",
-        "automation",
-        "testing"
-    ],
-    "text copy 23.txt": [
-        "security",
-        "network",
-        "instructions"
-    ],
-    "text copy 24.txt": [
-        "landscape",
-        "description",
-        "fiction"
-    ],
-    "text copy 25.txt": [
-        "fiction",
-        "russian literature",
-        "novel"
-    ],
-    "text copy 26.txt": [
-        "travel",
-        "adventure",
-        "exploration"
-    ],
-    "text copy 27.txt": [
-        "novel",
-        "drama",
-        "literature"
-    ],
-    "text copy 28.txt": [
-        "city",
-        "waterways",
-        "navigation"
-    ],
-    "text copy 29.txt": [
-        "population",
-        "city",
-        "tourism"
-    ],
-    "text copy.txt": [
-        "city",
-        "history",
-        "administration"
-    ],
-    "text.txt": [
-        "travel",
-        "vacation",
-        "sightseeing"
+        "striped fur"
     ]
 }
