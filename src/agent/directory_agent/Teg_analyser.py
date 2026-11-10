@@ -2,28 +2,31 @@ import re
 import json
 import time
 from pathlib import Path
-from collections import Counter
+from collections import Counter, defaultdict
 from ollama import Client
 
 BATCH_SIZE = 15
 TREE_FILE_BATCH = 8
 MAX_FIX_ROUNDS = 2
-MAX_TREE_ROUNDS = 2
+MAX_TREE_ROUNDS = 3
 ENABLE_TREE_REBUILD = False
 CLIENT_TIMEOUT = 300.0
 JSON_ARRAY_SCHEMA = {"type": "array", "items": {"type": "string"}}
 JSON_OBJECT_SCHEMA = {"type": "object"}
 DUP_PREFIX_LEN = 4
 
-NUM_PREDICT_SORTER = 1500
-NUM_PREDICT_STRUCT = 600
-NUM_PREDICT_FILES = 400
-NUM_PREDICT_REBUILD = 2500
+MAX_PARTS = 6            # 5 папок + файл (было 5)
+SPLIT_THRESHOLD = 5      # разбиваем папки с >5 файлов
+
+NUM_PREDICT_SORTER = 2500
+NUM_PREDICT_STRUCT = 1000
+NUM_PREDICT_FILES = 500
+NUM_PREDICT_REBUILD = 3500
 NUM_CTX = 4096
 
 
 # ════════════════════════════════════════════════════════════════
-#  ДЕТЕРМИНИРОВАННЫЙ КЛАССИФИКАТОР (последний рубеж)
+#  ДЕТЕРМИНИРОВАННЫЙ КЛАССИФИКАТОР — fallback для Other/Unsorted
 # ════════════════════════════════════════════════════════════════
 TAG_RULES = [
     (r"kitten|\bcat\b|cats|feline", "Animals/Cats"),
@@ -36,14 +39,12 @@ TAG_RULES = [
     (r"blueberr|fruit|apple|banana|berry", "Food/Fruit"),
     (r"nutrition|healthy food|dietary|bowl", "Food/Nutrition"),
     (r"\bcar\b|sports car|classic car|vehicle|truck|suv", "Vehicles/Cars"),
-    (r"error|bios|blue screen|hardware|\bcpu\b|\bgpu\b|motherboard|pc\b",
+    (r"error|bios|blue screen|hardware|\bcpu\b|\bgpu\b|motherboard",
      "Technology/Hardware"),
     (r"cursor|mouse pointer|\bui\b|\bux\b|interface|button", "Technology/UI"),
     (r"security|vulnerab|threat|malware", "Technology/Security"),
     (r"network|routing|traffic|\btcp\b|\bip\b|protocol", "Technology/Networks"),
-    (r"algorithm|data structure|arraylist|\bjava\b|programming|memory|leak",
-     "Technology/Programming"),
-    (r"\bphp\b|wordpress|html|\bcss\b|form|input", "Technology/Web"),
+    (r"\bphp\b|wordpress|html|\bcss\b", "Technology/Web"),
     (r"troubleshoot|technical|windows|diagnos", "Technology/Troubleshooting"),
     (r"queue|buffer|stack|waiting", "Technology/Computing"),
     (r"document|layout|\btext\b|word|pdf", "Documents"),
@@ -70,6 +71,91 @@ TAG_RULES = [
 ]
 
 
+# ════════════════════════════════════════════════════════════════
+#  ПРАВИЛА СПЛИТА — двух-уровневая структура
+#  Порядок КРИТИЧЕН: специфичные выше общих
+# ════════════════════════════════════════════════════════════════
+SPLIT_RULES = [
+    # NLP — выше ML, потому что у orkestrator есть и "graph theory"
+    (r"natural language processing|\bnlp\b|langchain|chatbot|\bllm\b|"
+     r"chatgpt|openai",
+     "MachineLearning/NLP"),
+    # ML/Regression — специфичнее общего ML
+    (r"linear.?regression|logistic regression|regression analysis",
+     "MachineLearning/Regression"),
+    # ML/NeuralNetworks
+    (r"neural network|\bneural\b|\bcnn\b|\brnn\b|\btransformer\b|deep learning",
+     "MachineLearning/NeuralNetworks"),
+    # ML/DataAnalysis — специфичные библиотеки
+    (r"data analysis|data cleaning|data visualization|correlation|heatmap|"
+     r"numpy|pandas|matplotlib|seaborn|dataframe",
+     "MachineLearning/DataAnalysis"),
+    # ML — общий
+    (r"machine learning|supervised learning|unsupervised", "MachineLearning"),
+
+    # DataStructures/Trees
+    (r"avl tree|segment tree|binary search tree|red.black tree|"
+     r"tree algorithm|binary tree", "DataStructures/Trees"),
+    # DataStructures/UnionFind
+    (r"\bdsu\b|union.find|disjoint set", "DataStructures/UnionFind"),
+
+    # Algorithms/Graphs — ВЫШЕ DataStructures/Sets
+    (r"graph theory|\bdfs\b|\bbfs\b|undirected graph|directed graph|"
+     r"connected components|topological|dijkstra|bfs|dfs|shortest path",
+     "Algorithms/Graphs"),
+    # Algorithms/DynamicProgramming
+    (r"dynamic programming|\bdp\b|memoization", "Algorithms/DynamicProgramming"),
+    # Algorithms/Sorting
+    (r"sorting algorithm|merge sort|quick sort|bubble sort|insertion sort|"
+     r"heap sort|counting sort|radix sort|pseudo sorting", "Algorithms/Sorting"),
+    # Algorithms/BinarySearch
+    (r"binary search|quick select|lower bound|upper bound", "Algorithms/BinarySearch"),
+    # Algorithms/Strings
+    (r"string algorithm|hash function|\bkmp\b|\btrie\b|suffix array|"
+     r"string matching", "Algorithms/Strings"),
+    # Algorithms/Greedy
+    (r"greedy", "Algorithms/Greedy"),
+    # Algorithms/Math
+    (r"number theory|modular arithmetic|prime number|binary.?exponentiation|"
+     r"quadratic equation|floating point comparison|numerical stability|"
+     r"integer division|\bmath\b|\barithmetic\b|\bstatistics\b",
+     "Algorithms/Math"),
+
+    # DataStructures/Sets — ниже Graphs
+    (r"ordered set|unordered set|hash set|std::set|std::unordered_set|\bset\b",
+     "DataStructures/Sets"),
+    # DataStructures/Arrays
+    (r"linked list|priority queue|\barraylist\b|\bstack\b|\bdeque\b",
+     "DataStructures/Arrays"),
+    # DataStructures — общий
+    (r"data structure", "DataStructures"),
+
+    # Algorithms — общий
+    (r"\balgorithm\b", "Algorithms"),
+
+    # Testing
+    (r"testing|checker|comparison|numba|subprocess", "Testing"),
+    # MemoryManagement
+    (r"memory management|memory allocation|universal swap|shift operation",
+     "MemoryManagement"),
+    # Web
+    (r"web development|\bhtml\b|\bcss\b|javascript|\bphp\b|wordpress", "Web"),
+]
+
+LANGUAGE_MAP = {
+    ".c": "C", ".h": "C",
+    ".cpp": "Cpp", ".cc": "Cpp", ".cxx": "Cpp", ".hpp": "Cpp",
+    ".py": "Python",
+    ".java": "Java",
+    ".js": "JavaScript", ".ts": "TypeScript",
+    ".rs": "Rust", ".go": "Go", ".rb": "Ruby",
+    ".cs": "CSharp", ".php": "PHP",
+    ".html": "HTML", ".css": "CSS",
+}
+
+CODE_EXTENSIONS = set(LANGUAGE_MAP.keys()) | {".sql", ".sh", ".bat", ".ps1"}
+
+
 def classify_by_tags(tags):
     if not tags:
         return None
@@ -78,6 +164,25 @@ def classify_by_tags(tags):
         if re.search(pattern, text):
             return category
     return None
+
+
+def classify_by_split_rules(tags):
+    """Возвращает подкатегорию (например, 'Algorithms/Sorting') или None."""
+    if not tags:
+        return None
+    text = " ".join(tags).lower()
+    for pattern, subfolder in SPLIT_RULES:
+        if re.search(pattern, text):
+            return subfolder
+    return None
+
+
+def language_subfolder(fname):
+    return LANGUAGE_MAP.get(Path(fname).suffix.lower())
+
+
+def _is_code_file(fname):
+    return Path(fname).suffix.lower() in CODE_EXTENSIONS
 
 
 # ════════════════════════════════════════════════════════════════
@@ -113,7 +218,7 @@ def validate_paths(paths, expected_files, tegs=None):
         parts = p.split("/")
         if len(parts) < 2:
             return False, f"No folder: {p!r}"
-        if len(parts) > 4:
+        if len(parts) > MAX_PARTS:
             return False, f"Too deep: {p!r}"
         for folder in parts[:-1]:
             if " " in folder:
@@ -172,6 +277,91 @@ def _timed_print(start, suffix=""):
 
 
 # ════════════════════════════════════════════════════════════════
+#  ПОСТПРОЦЕССИНГ: принудительная правильная структура для кода
+#  Работает НАД результатом модели — перекладывает ВСЕ файлы кода
+# ════════════════════════════════════════════════════════════════
+def _refine_programming_paths(all_paths_map, tegs):
+    """
+    Проходит по ВСЕМ файлам кода. Применяет SPLIT_RULES к тегам.
+    Если правило даёт путь — ставит его. Иначе — по языку.
+    Гарантирует, что модель не оставит код в "Technology/UI/" или
+    "Technology/Programming/Sorting/" без Algorithms.
+    """
+    moved = 0
+    for fname in list(all_paths_map.keys()):
+        if not _is_code_file(fname):
+            continue
+
+        tags = tegs.get(fname, [])
+        target = classify_by_split_rules(tags)
+        if not target:
+            lang = language_subfolder(fname)
+            target = f"Other/{lang}" if lang else "Other"
+        else:
+            target = target  # например "Algorithms/Sorting"
+
+        expected = f"Technology/Programming/{target}/{fname}"
+
+        # Проверка глубины
+        if len(expected.split("/")) > MAX_PARTS:
+            # Слишком глубоко — упростим: только первый уровень target
+            first = target.split("/")[0]
+            expected = f"Technology/Programming/{first}/{fname}"
+
+        current = all_paths_map[fname]
+        if current == expected:
+            continue
+        # Уже в правильной подкатегории (или глубже) — не трогаем
+        if current.startswith(f"Technology/Programming/{target}/"):
+            continue
+
+        old = current
+        all_paths_map[fname] = expected
+        moved += 1
+        if moved <= 15:
+            print(f"    refine {old} → {expected}")
+
+    print(f"  [refine] переложено файлов кода: {moved}")
+    return moved
+
+
+def _split_oversized_folders(all_paths_map, tegs, threshold=SPLIT_THRESHOLD):
+    """Добивает случаи, когда папка большая, а refine не сработал (не код)."""
+    by_folder = defaultdict(list)
+    for fname, path in all_paths_map.items():
+        parts = path.split("/")
+        if len(parts) >= 2:
+            by_folder["/".join(parts[:-1])].append(fname)
+
+    total = 0
+    for folder, files in by_folder.items():
+        if len(files) <= threshold:
+            continue
+        if len(folder.split("/")) >= MAX_PARTS - 1:
+            continue
+        moves = {}
+        for fname in files:
+            tags = tegs.get(fname, [])
+            sub = classify_by_split_rules(tags)
+            if sub:
+                moves[fname] = f"{folder}/{sub}/{fname}"
+            else:
+                lang = language_subfolder(fname)
+                if lang:
+                    moves[fname] = f"{folder}/{lang}/{fname}"
+        if not moves:
+            continue
+        sub_count = Counter("/".join(p.split("/")[:-1]) for p in moves.values())
+        if len(sub_count) < 2:
+            continue
+        for fname, new_path in moves.items():
+            all_paths_map[fname] = new_path
+            total += 1
+        print(f"  [split] {folder}: {len(files)} → {len(sub_count)} подпапок")
+    return total
+
+
+# ════════════════════════════════════════════════════════════════
 #  АГЕНТ 1: СОРТИРОВЩИК
 # ════════════════════════════════════════════════════════════════
 def _ask_sorter(client, model, system_prompt, chunk):
@@ -215,7 +405,7 @@ def _ask_sorter(client, model, system_prompt, chunk):
         if not isinstance(parsed, list):
             messages += [
                 {"role": "assistant", "content": content},
-                {"role": "user", "content": "Нужен МАССИВ строк, не объект."},
+                {"role": "user", "content": "Нужен МАССИВ строк."},
             ]
             continue
         repaired = _repair_batch(parsed, expected)
@@ -247,7 +437,7 @@ def _ask_sorter_fix(client, model, system_prompt, all_tags, problems):
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": json.dumps(fix_payload, ensure_ascii=False)},
     ]
-    print(f"    [sorter-fix] {len(files)} файлов на переделку", end="", flush=True)
+    print(f"    [sorter-fix] {len(files)} файлов", end="", flush=True)
     try:
         t0 = time.time()
         chunks = []
@@ -257,7 +447,6 @@ def _ask_sorter_fix(client, model, system_prompt, all_tags, problems):
                 "temperature": 0.2,
                 "num_predict": NUM_PREDICT_SORTER,
                 "num_ctx": NUM_CTX,
-                "repeat_penalty": 1.1,
             },
             keep_alive="10m", stream=True,
         ):
@@ -273,20 +462,18 @@ def _ask_sorter_fix(client, model, system_prompt, all_tags, problems):
     try:
         parsed = json.loads(content)
     except json.JSONDecodeError:
-        print("    [sorter-fix] invalid JSON")
         return {}
     if not isinstance(parsed, list):
         return {}
     repaired = _repair_batch(parsed, expected)
     ok, err = validate_paths(list(repaired.values()), expected, all_tags)
     if not ok:
-        print(f"    [sorter-fix] {err}")
         return {}
     return repaired
 
 
 # ════════════════════════════════════════════════════════════════
-#  АГЕНТ 2: ПРОВЕРЯЮЩИЙ СМЫСЛ ОТДЕЛЬНЫХ ПУТЕЙ
+#  АГЕНТ 2
 # ════════════════════════════════════════════════════════════════
 def _ask_validator(client, model, validator_prompt, tags, paths):
     payload = {"tags": tags, "paths": paths}
@@ -295,14 +482,14 @@ def _ask_validator(client, model, validator_prompt, tags, paths):
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
     ]
     try:
-        print(f"    [validator] проверка {len(paths)} путей", end="", flush=True)
+        print(f"    [validator] {len(paths)} путей", end="", flush=True)
         t0 = time.time()
         chunks = []
         for part in client.chat(
             model=model, messages=messages, format=JSON_OBJECT_SCHEMA,
             options={
                 "temperature": 0.1,
-                "num_predict": 800,
+                "num_predict": 1200,
                 "num_ctx": NUM_CTX,
             },
             keep_alive="10m", stream=True,
@@ -314,12 +501,11 @@ def _ask_validator(client, model, validator_prompt, tags, paths):
     except KeyboardInterrupt:
         raise
     except Exception as e:
-        print(f"    [validator] ERROR: {e}")
+        print(f"    ERROR: {e}")
         return []
     try:
         parsed = json.loads(content)
     except json.JSONDecodeError:
-        print(f"    [validator] invalid JSON: {content[:200]!r}")
         return []
     if not isinstance(parsed, dict) or parsed.get("ok") is True:
         return []
@@ -350,14 +536,14 @@ def _sort_with_validation(client, model, sorter_prompt, validator_prompt, chunk)
         print(f"  ── validation round {round_no}/{MAX_FIX_ROUNDS} ──")
         problems = _ask_validator(client, model, validator_prompt, chunk, paths_map)
         if not problems:
-            print(f"    ✓ смысл путей в порядке")
+            print(f"    ✓ смысл в порядке")
             break
         print(f"    ✗ проблем: {len(problems)}")
         for p in problems[:5]:
             print(f"      · {p['file']}: {p['reason']} → {p['suggest'] or '?'}")
         fixes = _ask_sorter_fix(client, model, sorter_prompt, chunk, problems)
         if not fixes:
-            print(f"    [warn] сортировщик не смог исправить — оставляем как есть")
+            print(f"    [warn] не удалось исправить")
             break
         for fname, new_path in fixes.items():
             paths_map[fname] = new_path
@@ -367,19 +553,15 @@ def _sort_with_validation(client, model, sorter_prompt, validator_prompt, chunk)
 
 
 # ════════════════════════════════════════════════════════════════
-#  АГЕНТ 3 (этап 1): проверка СТРУКТУРЫ папок
+#  АГЕНТ 3, этап 1
 # ════════════════════════════════════════════════════════════════
 def _ask_tree_structure(client, model, prompt, folders_counts, top_categories):
-    payload = {
-        "folders": folders_counts,
-        "top_categories": top_categories,
-    }
+    payload = {"folders": folders_counts, "top_categories": top_categories}
     messages = [
         {"role": "system", "content": prompt},
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
     ]
-    print(f"    [tree stage 1] структура: {len(folders_counts)} папок",
-          end="", flush=True)
+    print(f"    [tree stage 1] {len(folders_counts)} папок", end="", flush=True)
     try:
         t0 = time.time()
         chunks = []
@@ -401,32 +583,25 @@ def _ask_tree_structure(client, model, prompt, folders_counts, top_categories):
     except Exception as e:
         print(f" ERROR: {e}")
         return {"ok": True, "issues": []}
-
     try:
         parsed = json.loads(content)
     except json.JSONDecodeError:
-        print(f"    [tree stage 1] invalid JSON: {content[:200]!r}")
         return {"ok": True, "issues": []}
-
     if not isinstance(parsed, dict):
         return {"ok": True, "issues": []}
-
     raw = parsed.get("issues", [])
     if not isinstance(raw, list):
         raw = []
-    allowed = {"merge", "rename_folder", "too_specific"}
+    allowed = {"merge", "rename_folder", "too_specific", "split_oversized"}
     clean = [i for i in raw if isinstance(i, dict) and i.get("type") in allowed]
-
     for iss in clean:
         if iss.get("type") == "too_specific" and not iss.get("files"):
             iss["files"] = []
-
     return {"ok": parsed.get("ok", not clean), "issues": clean}
 
 
 # ════════════════════════════════════════════════════════════════
-#  АГЕНТ 3 (этап 2): проверка СМЫСЛА файлов батчами
-#  Маленькие батчи + num_predict, чтобы не было бесконечной генерации
+#  АГЕНТ 3, этап 2
 # ════════════════════════════════════════════════════════════════
 def _ask_tree_files(client, model, prompt, batch_paths, tegs):
     payload = {
@@ -439,7 +614,7 @@ def _ask_tree_files(client, model, prompt, batch_paths, tegs):
         {"role": "system", "content": prompt},
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
     ]
-    print(f"      batch ({len(batch_paths)} файлов)", end="", flush=True)
+    print(f"      batch ({len(batch_paths)})", end="", flush=True)
     try:
         t0 = time.time()
         chunks = []
@@ -462,34 +637,25 @@ def _ask_tree_files(client, model, prompt, batch_paths, tegs):
     except Exception as e:
         print(f" ERROR: {e}")
         return []
-
-    # Обрезаем потенциальные хвосты
     content = content.strip()
     if not content.startswith("{"):
-        print(f"      [skip] не JSON: {content[:80]!r}")
         return []
-
     try:
         parsed = json.loads(content)
     except json.JSONDecodeError:
-        print(f"      [skip] invalid JSON")
         return []
-
     if not isinstance(parsed, dict):
         return []
-
     raw = parsed.get("issues", [])
     if not isinstance(raw, list):
         return []
-
     allowed = {"misplaced_file", "inconsistent"}
     clean = []
     for iss in raw:
         if not isinstance(iss, dict) or iss.get("type") not in allowed:
             continue
         if iss["type"] == "misplaced_file":
-            f = iss.get("file")
-            if f not in batch_paths:
+            if iss.get("file") not in batch_paths:
                 continue
         clean.append(iss)
     return clean
@@ -520,7 +686,7 @@ def _apply_tree_fixes(all_paths_map, issues, tegs):
     for iss in issues:
         t = iss.get("type")
 
-        if t == "merge":
+        if t in ("merge", "rename_folder"):
             src = (iss.get("from") or "").strip("/")
             dst = (iss.get("to") or "").strip("/")
             if not src or not dst or not _valid_folder(dst) or src == dst:
@@ -528,21 +694,9 @@ def _apply_tree_fixes(all_paths_map, issues, tegs):
                 continue
             n = _rename_prefix(src, dst)
             if n:
-                applied.append(f"merge {src}/ → {dst}/ ({n} файлов)")
+                applied.append(f"{t} {src}/ → {dst}/ ({n})")
             else:
-                skipped.append({"issue": iss, "why": "нет файлов под from"})
-
-        elif t == "rename_folder":
-            src = (iss.get("from") or "").strip("/")
-            dst = (iss.get("to") or "").strip("/")
-            if not src or not dst or not _valid_folder(dst) or src == dst:
-                skipped.append({"issue": iss, "why": "bad from/to"})
-                continue
-            n = _rename_prefix(src, dst)
-            if n:
-                applied.append(f"rename {src}/ → {dst}/ ({n} файлов)")
-            else:
-                skipped.append({"issue": iss, "why": "нет файлов под from"})
+                skipped.append({"issue": iss, "why": "нет файлов"})
 
         elif t == "move_files":
             src_f = (iss.get("from_folder") or "").strip("/")
@@ -560,7 +714,7 @@ def _apply_tree_fixes(all_paths_map, issues, tegs):
                     applied.append(f"move {src_f}/{tail} → {dst_f}/{tail}")
                     moved += 1
             if not moved:
-                skipped.append({"issue": iss, "why": "нет файлов под from_folder"})
+                skipped.append({"issue": iss, "why": "нет файлов"})
 
         elif t == "too_specific":
             target = (iss.get("suggest") or "").strip("/")
@@ -573,6 +727,17 @@ def _apply_tree_fixes(all_paths_map, issues, tegs):
                     new_path = f"{target}/{fname}"
                     applied.append(f"move {fixed[fname]} → {new_path}")
                     fixed[fname] = new_path
+
+        elif t == "split_oversized":
+            folder = (iss.get("folder") or "").strip("/")
+            if not folder or not _valid_folder(folder):
+                skipped.append({"issue": iss, "why": "bad folder"})
+                continue
+            n = _split_one_folder(fixed, tegs, folder)
+            if n:
+                applied.append(f"split {folder}/ ({n})")
+            else:
+                skipped.append({"issue": iss, "why": "нет кандидатов"})
 
         elif t == "misplaced_file":
             fname = iss.get("file")
@@ -597,14 +762,41 @@ def _apply_tree_fixes(all_paths_map, issues, tegs):
                     continue
                 n = _rename_prefix(src, target)
                 if n:
-                    applied.append(f"inconsistent {src}/ → {target}/ ({n} файлов)")
+                    applied.append(f"inconsistent {src}/ → {target}/ ({n})")
 
     ok, err = validate_paths(list(fixed.values()), set(tegs.keys()), tegs)
     if not ok:
-        print(f"    [tree-fix] правки сломали формат ({err}) — откат")
+        print(f"    [tree-fix] сломали формат ({err}) — откат")
         return dict(all_paths_map), [], [{"why": f"rollback: {err}"}]
 
     return fixed, applied, skipped
+
+
+def _split_one_folder(all_paths_map, tegs, folder):
+    files = [f for f, p in all_paths_map.items()
+             if "/".join(p.split("/")[:-1]) == folder]
+    if len(files) <= SPLIT_THRESHOLD:
+        return 0
+    if len(folder.split("/")) >= MAX_PARTS - 1:
+        return 0
+    moves = {}
+    for fname in files:
+        tags = tegs.get(fname, [])
+        sub = classify_by_split_rules(tags)
+        if sub:
+            moves[fname] = f"{folder}/{sub}/{fname}"
+        else:
+            lang = language_subfolder(fname)
+            if lang:
+                moves[fname] = f"{folder}/{lang}/{fname}"
+    if not moves:
+        return 0
+    sub_count = Counter("/".join(p.split("/")[:-1]) for p in moves.values())
+    if len(sub_count) < 2:
+        return 0
+    for fname, new_path in moves.items():
+        all_paths_map[fname] = new_path
+    return len(moves)
 
 
 # ════════════════════════════════════════════════════════════════
@@ -614,30 +806,25 @@ def _tree_validation_staged(client, model, structure_prompt, files_prompt,
                              all_paths_map, tegs):
     total_issues = 0
 
-    # ─── ЭТАП 1: структура ───
     folder_counts = Counter(
         "/".join(p.split("/")[:-1]) for p in all_paths_map.values()
     )
     folders_dict = {f: n for f, n in folder_counts.items() if f}
     top_cats = sorted({p.split("/")[0] for p in all_paths_map.values()})
 
-    print(f"\n  [этап 1/2] Проверка структуры папок")
+    print(f"\n  [этап 1/2] структура")
     struct = _ask_tree_structure(client, model, structure_prompt,
                                   folders_dict, top_cats)
     struct_issues = struct.get("issues", [])
     if struct_issues:
-        print(f"    ✗ проблем структуры: {len(struct_issues)}")
+        print(f"    ✗ проблем: {len(struct_issues)}")
         for iss in struct_issues[:10]:
             print(f"      · {iss.get('type')}: {iss.get('reason', '')}")
-
         for iss in struct_issues:
             if iss.get("type") == "too_specific" and not iss.get("files"):
                 folder = (iss.get("folder") or "").strip("/") + "/"
-                iss["files"] = [
-                    fname for fname, path in all_paths_map.items()
-                    if path.startswith(folder)
-                ]
-
+                iss["files"] = [fname for fname, path in all_paths_map.items()
+                                if path.startswith(folder)]
         fixed_map, applied, skipped = _apply_tree_fixes(
             all_paths_map, struct_issues, tegs
         )
@@ -650,12 +837,11 @@ def _tree_validation_staged(client, model, structure_prompt, files_prompt,
     else:
         print(f"    ✓ структура в порядке")
 
-    # ─── ЭТАП 2: смысл файлов маленькими батчами ───
-    print(f"\n  [этап 2/2] Проверка смысла файлов")
+    print(f"\n  [этап 2/2] смысл файлов")
     items = list(all_paths_map.items())
     batches = [items[i:i + TREE_FILE_BATCH]
                for i in range(0, len(items), TREE_FILE_BATCH)]
-    print(f"    батчей: {len(batches)} по ~{TREE_FILE_BATCH} файлов")
+    print(f"    батчей: {len(batches)}")
 
     all_file_issues = []
     skipped_batches = 0
@@ -669,7 +855,7 @@ def _tree_validation_staged(client, model, structure_prompt, files_prompt,
         except KeyboardInterrupt:
             raise
         except Exception as e:
-            print(f"      [skip batch] {e}")
+            print(f"      [skip] {e}")
             skipped_batches += 1
             continue
 
@@ -677,7 +863,7 @@ def _tree_validation_staged(client, model, structure_prompt, files_prompt,
         print(f"    [warn] пропущено батчей: {skipped_batches}")
 
     if all_file_issues:
-        print(f"    ✗ проблем файлов: {len(all_file_issues)}")
+        print(f"    ✗ проблем: {len(all_file_issues)}")
         for iss in all_file_issues[:10]:
             print(f"      · {iss.get('type')}: {iss.get('reason', '')}")
         fixed_map, applied, skipped = _apply_tree_fixes(
@@ -690,65 +876,9 @@ def _tree_validation_staged(client, model, structure_prompt, files_prompt,
             all_paths_map = fixed_map
         total_issues += len(all_file_issues)
     else:
-        print(f"    ✓ смысл файлов в порядке")
+        print(f"    ✓ смысл в порядке")
 
     return all_paths_map, total_issues
-
-
-# ════════════════════════════════════════════════════════════════
-#  Опциональный rebuild
-# ════════════════════════════════════════════════════════════════
-def _ask_tree_rebuild(client, model, prompt, all_paths, tegs):
-    payload = {
-        "tree": all_paths,
-        "tags": {p.split("/")[-1]: tegs.get(p.split("/")[-1], [])
-                 for p in all_paths},
-    }
-    messages = [
-        {"role": "system", "content": prompt},
-        {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
-    ]
-    print(f"    [tree rebuild] перестройка {len(all_paths)} путей",
-          end="", flush=True)
-    try:
-        t0 = time.time()
-        chunks = []
-        for part in client.chat(
-            model=model, messages=messages, format=JSON_OBJECT_SCHEMA,
-            options={
-                "temperature": 0.1,
-                "num_predict": NUM_PREDICT_REBUILD,
-                "num_ctx": NUM_CTX,
-            },
-            keep_alive="10m", stream=True,
-        ):
-            chunks.append(part["message"]["content"])
-            print(".", end="", flush=True)
-        content = "".join(chunks)
-        _timed_print(t0)
-    except KeyboardInterrupt:
-        raise
-    except Exception as e:
-        print(f" ERROR: {e}")
-        return None
-
-    try:
-        parsed = json.loads(content)
-    except json.JSONDecodeError:
-        return None
-    if not isinstance(parsed, dict):
-        return None
-    proposed = parsed.get("tree")
-    if not isinstance(proposed, list):
-        return None
-
-    expected = set(tegs.keys())
-    repaired = _repair_batch(proposed, expected)
-    ok, err = validate_paths(list(repaired.values()), expected, tegs)
-    if not ok:
-        print(f"    [tree rebuild] отклонено: {err}")
-        return None
-    return repaired
 
 
 # ════════════════════════════════════════════════════════════════
@@ -769,7 +899,7 @@ def apply_deterministic_fallback(all_paths, tegs):
                 fixed_count += 1
                 continue
         fixed.append(path)
-    print(f"[fallback] восстановлено по тегам: {fixed_count}")
+    print(f"[fallback] восстановлено: {fixed_count}")
     return fixed
 
 
@@ -782,9 +912,6 @@ def Teg_analyse(programm_path):
     validator_prompt = (base / "validate_paths_prompt.txt").read_text(encoding="utf-8")
     structure_prompt = (base / "validate_tree_structure_prompt.txt").read_text(encoding="utf-8")
     files_prompt = (base / "validate_tree_files_prompt.txt").read_text(encoding="utf-8")
-    rebuild_prompt = ""
-    if ENABLE_TREE_REBUILD:
-        rebuild_prompt = (base / "validate_tree_prompt.txt").read_text(encoding="utf-8")
 
     with open(base / "tegs.json", "r", encoding="utf-8") as f:
         tegs = json.load(f)
@@ -802,7 +929,7 @@ def Teg_analyse(programm_path):
     all_paths_map = {}
     start_total = time.time()
 
-    # ─── Основной цикл: агент 1 + агент 2 по батчам ───
+    # ─── Основной цикл ───
     try:
         for idx, batch in enumerate(batches, 1):
             chunk = dict(batch)
@@ -823,16 +950,31 @@ def Teg_analyse(programm_path):
         if f not in all_paths_map:
             all_paths_map[f] = f"Other/{f}"
 
-    # ─── Детерминированный fallback ───
+    # ─── Fallback для Other/Unsorted ───
     print("\n[deterministic fallback]")
     ordered = [all_paths_map[f] for f in tegs]
     ordered = apply_deterministic_fallback(ordered, tegs)
     for f, p in zip(tegs, ordered):
         all_paths_map[f] = p
 
-    # ─── АГЕНТ 3: пошаговая проверка ───
-    print("\n═══ Tree validation (staged) ═══")
+    # ═══ ПОСТПРОЦЕССИНГ: принудительная правильная структура ═══
+    print("\n[refine programming paths]")
+    t_ref = time.time()
+    n = _refine_programming_paths(all_paths_map, tegs)
+    _timed_print(t_ref, f", переложено {n}")
+    _safe_dump(base / "new_paths.json",
+               [all_paths_map[f] for f in tegs])
 
+    # ─── Сплит больших неклассифицированных папок ───
+    print("\n[split oversized folders]")
+    t_split = time.time()
+    moved = _split_oversized_folders(all_paths_map, tegs, SPLIT_THRESHOLD)
+    _timed_print(t_split, f", перемещено {moved}")
+    _safe_dump(base / "new_paths.json",
+               [all_paths_map[f] for f in tegs])
+
+    # ─── АГЕНТ 3 ───
+    print("\n═══ Tree validation (staged) ═══")
     for round_no in range(1, MAX_TREE_ROUNDS + 1):
         print(f"\n[tree round {round_no}/{MAX_TREE_ROUNDS}]")
         t0 = time.time()
@@ -844,45 +986,34 @@ def Teg_analyse(programm_path):
         _safe_dump(base / "new_paths.json",
                    [all_paths_map[f] for f in tegs])
         _timed_print(t0, " round time")
-
         if issues_count == 0:
             print(f"  ✓ дерево логично")
             break
+        print(f"  → issues: {issues_count}")
 
-        print(f"  → после раунда {round_no}: было {issues_count} issues")
+    # ─── Финальный refine (на случай, если агент 3 что-то сломал) ───
+    print("\n[final refine]")
+    _refine_programming_paths(all_paths_map, tegs)
+    _safe_dump(base / "new_paths.json",
+               [all_paths_map[f] for f in tegs])
 
-    if ENABLE_TREE_REBUILD:
-        print("\n[tree rebuild (optional)]")
-        candidate = _ask_tree_rebuild(
-            client, "qwen2.5:7b", rebuild_prompt,
-            [all_paths_map[f] for f in tegs], tegs,
-        )
-        if candidate:
-            changed = sum(1 for f in tegs
-                          if candidate.get(f) != all_paths_map[f])
-            if changed > 0:
-                print(f"  ✓ rebuild: изменено {changed} путей")
-                all_paths_map = candidate
-                _safe_dump(base / "new_paths.json",
-                           [all_paths_map[f] for f in tegs])
-
-    # ─── Финальная валидация + вывод ───
+    # ─── Финальная валидация ───
     final = [all_paths_map[f] for f in tegs]
     ok, err = validate_paths(final, set(tegs.keys()), tegs)
     if not ok:
-        print(f"[!] Финал не прошёл валидацию: {err}")
+        print(f"[!] Финальная валидация: {err}")
     _safe_dump(base / "new_paths.json", final)
 
     others = sum(1 for p in final if p.split("/")[0] == "Other")
     unsorted = sum(1 for p in final if p.split("/")[0] == "Unsorted")
     total_time = time.time() - start_total
-    print(f"\nГотово: {len(final)} путей, Other/: {others}, Unsorted/: {unsorted}")
-    print(f"Общее время: {total_time:.0f} с")
+    print(f"\nГотово: {len(final)}, Other/: {others}, Unsorted/: {unsorted}")
+    print(f"Время: {total_time:.0f}с")
     print(json.dumps(final, ensure_ascii=False, indent=2))
     return final
 
 
 if __name__ == "__main__":
     Teg_analyse(
-        r"C:\Users\Матвей\Documents\GitHub\AI-File-Sorter\src\agent\directory_agent"
+        r"C:\Users\MSI\Documents\GitHub\AI-File-Sorter\src\agent\directory_agent"
     )
