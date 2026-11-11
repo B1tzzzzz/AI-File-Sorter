@@ -9,45 +9,35 @@ BATCH_SIZE = 15
 TREE_FILE_BATCH = 8
 MAX_FIX_ROUNDS = 2
 MAX_TREE_ROUNDS = 3
-ENABLE_TREE_REBUILD = False
 CLIENT_TIMEOUT = 300.0
 JSON_ARRAY_SCHEMA = {"type": "array", "items": {"type": "string"}}
 JSON_OBJECT_SCHEMA = {"type": "object"}
 DUP_PREFIX_LEN = 4
-
 MAX_PARTS = 6
-SPLIT_THRESHOLD = 5
 FOLDER_TOP_TAGS_N = 5
 
 NUM_PREDICT_SORTER = 2500
 NUM_PREDICT_STRUCT = 1500
 NUM_PREDICT_FILES = 500
-NUM_PREDICT_REBUILD = 3500
 NUM_CTX = 4096
 
 
-# ════════════════════════════════════════════════════════════════
-#  Проверка suggest по whitelist
-# ════════════════════════════════════════════════════════════════
+WHITELIST_ROOTS = {
+    "Animals", "Art", "Business", "Construction", "Culture", "Documents",
+    "Education", "Entertainment", "Food", "Games", "Geography", "Health",
+    "History", "Language", "Literature", "Media", "Nature", "People",
+    "Politics", "Science", "Technology", "Travel", "Urban", "Vehicles",
+    "Work", "Other", "Unsorted",
+}
+
 BAD_ROOTS = {
     "sciencefiction": "Literature/ScienceFiction",
     "play": "Literature/Plays", "plays": "Literature/Plays",
     "novel": "Literature/Novels", "novels": "Literature/Novels",
-    "poem": "Literature/Poems", "poems": "Literature/Poems",
-    "story": "Literature/ShortStories", "stories": "Literature/ShortStories",
     "ui": "Technology/UI", "ux": "Technology/UI",
     "web": "Technology/Web",
     "programming": "Technology/Programming",
-    "algorithm": "Technology/Programming/Algorithms",
-    "algorithms": "Technology/Programming/Algorithms",
-    "sorting": "Technology/Programming/Algorithms/Sorting",
-    "graphs": "Technology/Programming/Algorithms/Graphs",
-    "dynamicprogramming": "Technology/Programming/Algorithms/DynamicProgramming",
-    "computing": "Technology/Computing",
-    "networks": "Technology/Networks",
-    "hardware": "Technology/Hardware",
-    "troubleshooting": "Technology/Troubleshooting",
-    "cars": "Vehicles/Cars",
+    "cars": "Vehicles/Cars", "car": "Vehicles/Cars",
     "primates": "Animals/Primates",
     "birds": "Animals/Birds",
     "cats": "Animals/Cats",
@@ -57,13 +47,44 @@ BAD_ROOTS = {
     "landscape": "Nature/Landscape",
     "autumn": "Nature/Autumn",
     "cities": "Urban", "city": "Urban",
-    "machinelearning": "Technology/Programming/MachineLearning",
-    "datastructures": "Technology/Programming/DataStructures",
-    "testing": "Technology/Programming/Testing",
-    "memorymanagement": "Technology/Programming/MemoryManagement",
     "dictionary": "Language/Dictionary",
     "islam": "History/Islam",
+    "fastfood": "Food/FastFood",
+    "characters": "Art/Cartoons",
 }
+
+# Минимальная сеть синонимов — только для защиты от грубых ошибок перетаскивания.
+# Если файл с тегом "owl" перетаскивают в "Animals/Birds", проверка должна пройти.
+SYNONYMS = {
+    "bird": {"owl", "eagle", "parrot", "sparrow", "duck", "swan", "penguin", "hawk", "falcon"},
+    "cat": {"kitten", "feline"},
+    "dog": {"puppy", "canine"},
+    "primate": {"chimpanzee", "chimp", "monkey", "ape", "gorilla", "orangutan"},
+    "wildlife": {"tiger", "lion", "leopard", "wolf", "wolves", "fox", "bear",
+                 "deer", "squirrel", "elephant", "zebra", "giraffe"},
+    "plant": {"flower", "tree", "grass", "leaf", "bloom"},
+    "insect": {"bee", "ant", "butterfly", "fly", "mosquito"},
+}
+
+
+LANGUAGE_MAP = {
+    ".c": "C", ".h": "C",
+    ".cpp": "Cpp", ".cc": "Cpp", ".cxx": "Cpp", ".hpp": "Cpp",
+    ".py": "Python", ".java": "Java",
+    ".js": "JavaScript", ".ts": "TypeScript",
+    ".rs": "Rust", ".go": "Go", ".rb": "Ruby",
+    ".cs": "CSharp", ".php": "PHP",
+    ".html": "HTML", ".css": "CSS",
+}
+CODE_EXTENSIONS = set(LANGUAGE_MAP.keys()) | {".sql", ".sh", ".bat", ".ps1"}
+
+
+def _is_code_file(fname):
+    return Path(fname).suffix.lower() in CODE_EXTENSIONS
+
+
+def language_subfolder(fname):
+    return LANGUAGE_MAP.get(Path(fname).suffix.lower())
 
 
 def _sanitize_suggest(suggest):
@@ -78,175 +99,55 @@ def _sanitize_suggest(suggest):
         replacement = BAD_ROOTS[first_lower]
         rest = "/".join(parts[1:])
         return f"{replacement}/{rest}" if rest else replacement
+    if parts[0] not in WHITELIST_ROOTS:
+        return ""
     return s
 
 
-# ════════════════════════════════════════════════════════════════
-#  Детерминированный классификатор — fallback для Other/Unsorted
-# ════════════════════════════════════════════════════════════════
-TAG_RULES = [
-    (r"kitten|\bcat\b|cats|feline", "Animals/Cats"),
-    (r"primate|chimpanzee|monkey|ape", "Animals/Primates"),
-    (r"owl|bird|eagle|parrot", "Animals/Birds"),
-    (r"wildlife|\banimal\b|\blion\b|\btiger\b|leopard|squirrel|wolf|wolves|fox",
-     "Animals/Wildlife"),
-    (r"hamburger|cheeseburger|burger|fast food", "Food/FastFood"),
-    (r"dessert|cake|sweet|snack", "Food/Desserts"),
-    (r"blueberr|fruit|apple|banana|berry", "Food/Fruit"),
-    (r"nutrition|healthy food|dietary|bowl", "Food/Nutrition"),
-    (r"\bcar\b|sports car|classic car|vehicle|truck|suv", "Vehicles/Cars"),
-    (r"error|bios|blue screen|hardware|\bcpu\b|\bgpu\b|motherboard",
-     "Technology/Hardware"),
-    (r"cursor|mouse pointer|\bui\b|\bux\b|interface|button", "Technology/UI"),
-    (r"security|vulnerab|threat|malware", "Technology/Security"),
-    (r"network|routing|traffic|\btcp\b|\bip\b|protocol", "Technology/Networks"),
-    (r"\bphp\b|wordpress|html|\bcss\b", "Technology/Web"),
-    (r"troubleshoot|technical|windows|diagnos", "Technology/Troubleshooting"),
-    (r"queue|buffer|stack|waiting", "Technology/Computing"),
-    (r"document|layout|\btext\b|word|pdf", "Documents"),
-    (r"literature|novel|\bplay\b|poem|story|fiction|description|setting",
-     "Literature"),
-    (r"dictionary|definition|language", "Language"),
-    (r"islam|religion", "History/Religion"),
-    (r"biography|soviet history|political figure", "History/Biography"),
-    (r"politics|diplomacy|policy|government|international relation", "Politics"),
-    (r"history|historical|medieval", "History"),
-    (r"geology|volcanic|lava|rock", "Nature/Geology"),
-    (r"night sky|moonlight|moon|stars|sunset", "Nature/NightSky"),
-    (r"autumn|fall foliage|season", "Nature/Autumn"),
-    (r"landscape|mountain|forest|lake|river|reflection|sky|snow",
-     "Nature/Landscape"),
-    (r"nature|serenity|spring|flowers", "Nature"),
-    (r"city geography|waterway|urban infrastructure|street", "Urban/Streets"),
-    (r"urban|citect|tourism|population|administration", "Urban"),
-    (r"cartoon|character|avatar|red hair|t-shirt|pointing", "Art/Cartoons"),
-    (r"video game|gaming|esports", "Games/Esports"),
-    (r"meeting|agenda|action items|report", "Work/Meetings"),
-    (r"travel|vacation|sightseeing|trip|cruise", "Travel"),
-    (r"construction|materials|concrete", "Construction/Materials"),
-]
+def _expand_tags(tags_lower):
+    expanded = set(tags_lower)
+    for tag in tags_lower:
+        for canon, syns in SYNONYMS.items():
+            if tag in syns:
+                expanded.add(canon)
+            if tag == canon:
+                expanded.update(syns)
+    return expanded
 
 
-# ════════════════════════════════════════════════════════════════
-#  ПРАВИЛА СПЛИТА — порядок КРИТИЧЕН
-#  Testing / Memory / Web — ВЫШЕ generic \balgorithm\b
-#  \s* везде — матчит слитные теги (segmenttree, sortingalgorithm)
-# ════════════════════════════════════════════════════════════════
-SPLIT_RULES = [
-    # NLP — выше ML
-    (r"natural\s*language\s*processing|\bnlp\b|langchain|chatbot|\bllm\b",
-     "MachineLearning/NLP"),
-    (r"linear\s*regression|logistic\s*regression|regression\s*analysis",
-     "MachineLearning/Regression"),
-    (r"neural\s*network|deep\s*learning|\bcnn\b|\brnn\b|\btransformer\b",
-     "MachineLearning/NeuralNetworks"),
-    (r"data\s*analysis|data\s*cleaning|data\s*visualization|correlation|heatmap|"
-     r"numpy|pandas|matplotlib|seaborn|dataframe",
-     "MachineLearning/DataAnalysis"),
-    (r"machine\s*learning|supervised\s*learning|unsupervised", "MachineLearning"),
-
-    # ─── Testing / Memory / Web ВЫШЕ generic algorithm ───
-    (r"testing|checker|comparison|numba|subprocess", "Testing"),
-    (r"memory\s*management|memory\s*allocation|universal\s*swap|shift\s*operation",
-     "MemoryManagement"),
-    (r"web\s*development|\bhtml\b|\bcss\b|javascript|\bphp\b|wordpress", "Web"),
-
-    # ─── DataStructures конкретные ───
-    (r"avl\s*tree|segment\s*tree|binary\s*search\s*tree|red.black\s*tree|"
-     r"tree\s*algorithm|binary\s*tree", "DataStructures/Trees"),
-    (r"\bdsu\b|union.find|disjoint\s*set", "DataStructures/UnionFind"),
-
-    # ─── Algorithms конкретные ───
-    (r"graph\s*theory|\bdfs\b|\bbfs\b|undirected\s*graph|directed\s*graph|"
-     r"connected\s*components|topological|dijkstra|shortest\s*path",
-     "Algorithms/Graphs"),
-    (r"dynamic\s*programming|\bdp\b|memoization", "Algorithms/DynamicProgramming"),
-    (r"sorting\s*algorithm|merge\s*sort|quick\s*sort|bubble\s*sort|"
-     r"insertion\s*sort|heap\s*sort|counting\s*sort|radix\s*sort|"
-     r"pseudo\s*sorting", "Algorithms/Sorting"),
-    (r"binary\s*search|quick\s*select|lower\s*bound|upper\s*bound|"
-     r"searching\s*algorithm", "Algorithms/BinarySearch"),
-    (r"string\s*algorithm|hash\s*function|\bkmp\b|\btrie\b|suffix\s*array|"
-     r"string\s*matching|hash\s*string", "Algorithms/Strings"),
-    (r"greedy", "Algorithms/Greedy"),
-    (r"number\s*theory|modular\s*arithmetic|prime\s*number|"
-     r"binary\s*exponentiation|quadratic\s*equation|floating\s*point\s*comparison|"
-     r"numerical\s*stability|integer\s*division|\bmath\b|\barithmetic\b|"
-     r"\bstatistics\b", "Algorithms/Math"),
-
-    # ─── DataStructures менее специфичные ───
-    (r"ordered\s*set|unordered\s*set|hash\s*set|\bset\b", "DataStructures/Sets"),
-    (r"linked\s*list|priority\s*queue|\barraylist\b|\bstack\b|\bdeque\b",
-     "DataStructures/Arrays"),
-    (r"data\s*structure", "DataStructures"),
-
-    # ─── Generic — последний ───
-    (r"\balgorithm\b|\w*algorithm\b", "Algorithms"),
-]
-
-
-LANGUAGE_MAP = {
-    ".c": "C", ".h": "C",
-    ".cpp": "Cpp", ".cc": "Cpp", ".cxx": "Cpp", ".hpp": "Cpp",
-    ".py": "Python",
-    ".java": "Java",
-    ".js": "JavaScript", ".ts": "TypeScript",
-    ".rs": "Rust", ".go": "Go", ".rb": "Ruby",
-    ".cs": "CSharp", ".php": "PHP",
-    ".html": "HTML", ".css": "CSS",
-}
-
-CODE_EXTENSIONS = set(LANGUAGE_MAP.keys()) | {".sql", ".sh", ".bat", ".ps1"}
-
-
-def classify_by_tags(tags):
+def _path_matches_tags(fname, target_folder, tegs):
+    """Для не-кода: хотя бы одно слово из пути должно быть в тегах."""
+    if _is_code_file(fname):
+        return True
+    tags = tegs.get(fname, [])
     if not tags:
-        return None
-    text = " ".join(tags).lower()
-    for pattern, category in TAG_RULES:
-        if re.search(pattern, text):
-            return category
-    return None
+        return True
+    expanded = _expand_tags(set(t.lower() for t in tags))
+    folder_words = re.findall(r'[A-Za-z]+', target_folder)
+    for fw in folder_words:
+        fw_lower = fw.lower()
+        if fw_lower in expanded:
+            return True
+        for tag in expanded:
+            if tag in fw_lower or fw_lower in tag:
+                return True
+    return False
 
 
-def classify_by_split_rules(tags):
-    if not tags:
-        return None
-    text = " ".join(tags).lower()
-    for pattern, subfolder in SPLIT_RULES:
-        if re.search(pattern, text):
-            return subfolder
-    return None
-
-
-def language_subfolder(fname):
-    return LANGUAGE_MAP.get(Path(fname).suffix.lower())
-
-
-def _is_code_file(fname):
-    return Path(fname).suffix.lower() in CODE_EXTENSIONS
-
-
-# ════════════════════════════════════════════════════════════════
-#  Агрегация тегов по папкам
-# ════════════════════════════════════════════════════════════════
-def _build_folder_stats(all_paths_map, tegs, top_n=FOLDER_TOP_TAGS_N):
-    by_folder = defaultdict(list)
-    for fname, path in all_paths_map.items():
-        folder = "/".join(path.split("/")[:-1])
-        by_folder[folder].append(fname)
-
-    result = {}
-    for folder, files in by_folder.items():
-        if not folder:
-            continue
-        tag_counter = Counter()
-        for f in files:
-            for tag in tegs.get(f, []):
-                tag_counter[tag.lower()] += 1
-        top_tags = [t for t, _ in tag_counter.most_common(top_n)]
-        result[folder] = {"count": len(files), "top_tags": top_tags}
-    return result
+def _dest_matches_top(fname, dest_folder):
+    """Базовая проверка top-level: whitelist, код→Programming, не-код∉Programming."""
+    if not dest_folder:
+        return False
+    top = dest_folder.split("/")[0]
+    if top not in WHITELIST_ROOTS:
+        return False
+    is_code = _is_code_file(fname)
+    in_prog = dest_folder.startswith("Technology/Programming")
+    if is_code and not in_prog:
+        return False
+    if not is_code and in_prog:
+        return False
+    return True
 
 
 # ════════════════════════════════════════════════════════════════
@@ -336,86 +237,48 @@ def _safe_dump(path, obj):
 
 
 def _timed_print(start, suffix=""):
-    elapsed = time.time() - start
-    print(f" {elapsed:.1f}s{suffix}")
+    print(f" {time.time() - start:.1f}s{suffix}")
 
 
-# ════════════════════════════════════════════════════════════════
-#  Принудительная классификация для кода
-# ════════════════════════════════════════════════════════════════
-def _refine_programming_paths(all_paths_map, tegs, silent=False):
+def _build_folder_stats(all_paths_map, tegs, top_n=FOLDER_TOP_TAGS_N):
+    by_folder = defaultdict(list)
+    for fname, path in all_paths_map.items():
+        by_folder["/".join(path.split("/")[:-1])].append(fname)
+    result = {}
+    for folder, files in by_folder.items():
+        if not folder:
+            continue
+        tag_counter = Counter()
+        for f in files:
+            for tag in tegs.get(f, []):
+                tag_counter[tag.lower()] += 1
+        result[folder] = {
+            "count": len(files),
+            "top_tags": [t for t, _ in tag_counter.most_common(top_n)],
+        }
+    return result
+
+
+def _refine_programming_paths(all_paths_map, silent=False):
     moved = 0
-    for fname in list(all_paths_map.keys()):
+    for fname, current in list(all_paths_map.items()):
         if not _is_code_file(fname):
             continue
-
-        tags = tegs.get(fname, [])
-        target = classify_by_split_rules(tags)
-        if not target:
-            lang = language_subfolder(fname)
-            if not lang:
-                continue
-            target = f"Other/{lang}"
-
-        expected = f"Technology/Programming/{target}/{fname}"
-        if len(expected.split("/")) > MAX_PARTS:
-            first = target.split("/")[0]
-            expected = f"Technology/Programming/{first}/{fname}"
-
-        current = all_paths_map[fname]
-        if current == expected:
+        if current.startswith("Technology/Programming/"):
             continue
-        if current.startswith(f"Technology/Programming/{target}/"):
-            continue
-
-        old = current
-        all_paths_map[fname] = expected
+        lang = language_subfolder(fname) or "Other"
+        new_path = f"Technology/Programming/{lang}/{fname}"
+        all_paths_map[fname] = new_path
         moved += 1
         if not silent and moved <= 15:
-            print(f"    refine {old} → {expected}")
-
+            print(f"    refine {current} → {new_path}")
     if not silent:
-        print(f"  [refine] переложено файлов кода: {moved}")
+        print(f"  [refine] переложено: {moved}")
     return moved
 
 
-def _split_oversized_folders(all_paths_map, tegs, threshold=SPLIT_THRESHOLD):
-    by_folder = defaultdict(list)
-    for fname, path in all_paths_map.items():
-        parts = path.split("/")
-        if len(parts) >= 2:
-            by_folder["/".join(parts[:-1])].append(fname)
-
-    total = 0
-    for folder, files in by_folder.items():
-        if len(files) <= threshold:
-            continue
-        if len(folder.split("/")) >= MAX_PARTS - 1:
-            continue
-        moves = {}
-        for fname in files:
-            tags = tegs.get(fname, [])
-            sub = classify_by_split_rules(tags)
-            if sub:
-                moves[fname] = f"{folder}/{sub}/{fname}"
-            else:
-                lang = language_subfolder(fname)
-                if lang:
-                    moves[fname] = f"{folder}/{lang}/{fname}"
-        if not moves:
-            continue
-        sub_count = Counter("/".join(p.split("/")[:-1]) for p in moves.values())
-        if len(sub_count) < 2:
-            continue
-        for fname, new_path in moves.items():
-            all_paths_map[fname] = new_path
-            total += 1
-        print(f"  [split] {folder}: {len(files)} → {len(sub_count)} подпапок")
-    return total
-
-
 # ════════════════════════════════════════════════════════════════
-#  Агент 1: сортировщик
+#  Агент 1
 # ════════════════════════════════════════════════════════════════
 def _ask_sorter(client, model, system_prompt, chunk):
     expected = set(chunk.keys())
@@ -425,17 +288,14 @@ def _ask_sorter(client, model, system_prompt, chunk):
     ]
     for attempt in range(1, 4):
         try:
-            print(f"    [sorter] попытка {attempt}", end="", flush=True)
+            print(f"    [sorter] {attempt}", end="", flush=True)
             t0 = time.time()
             chunks = []
             for part in client.chat(
                 model=model, messages=messages, format=JSON_ARRAY_SCHEMA,
-                options={
-                    "temperature": 0.1 if attempt == 1 else 0.5,
-                    "num_predict": NUM_PREDICT_SORTER,
-                    "num_ctx": NUM_CTX,
-                    "repeat_penalty": 1.1,
-                },
+                options={"temperature": 0.1 if attempt == 1 else 0.5,
+                         "num_predict": NUM_PREDICT_SORTER,
+                         "num_ctx": NUM_CTX, "repeat_penalty": 1.1},
                 keep_alive="10m", stream=True,
             ):
                 chunks.append(part["message"]["content"])
@@ -452,24 +312,20 @@ def _ask_sorter(client, model, system_prompt, chunk):
         except json.JSONDecodeError:
             messages += [
                 {"role": "assistant", "content": content},
-                {"role": "user", "content": "Не валидный JSON. Верни JSON-массив строк."},
-            ]
+                {"role": "user", "content": "Не валидный JSON. Верни JSON-массив строк."}]
             continue
         if not isinstance(parsed, list):
             messages += [
                 {"role": "assistant", "content": content},
-                {"role": "user", "content": "Нужен МАССИВ строк."},
-            ]
+                {"role": "user", "content": "Нужен МАССИВ строк."}]
             continue
         repaired = _repair_batch(parsed, expected)
         ok, err = validate_paths(list(repaired.values()), expected, chunk)
         if ok:
             return list(repaired.values())
-        print(f"    [sorter] debug: {err}")
         messages += [
             {"role": "assistant", "content": content},
-            {"role": "user", "content": f"Не прошло: {err}. Верни массив строк."},
-        ]
+            {"role": "user", "content": f"Не прошло: {err}. Верни массив строк."}]
     return [f"Other/{f}" for f in expected]
 
 
@@ -478,11 +334,9 @@ def _ask_sorter_fix(client, model, system_prompt, all_tags, problems):
     if not files:
         return {}
     fix_payload = {
-        "fix": [
-            {"file": p["file"], "current": p.get("current", ""),
-             "reason": p.get("reason", ""), "suggest": p.get("suggest", "")}
-            for p in problems if p["file"] in all_tags
-        ],
+        "fix": [{"file": p["file"], "current": p.get("current", ""),
+                 "reason": p.get("reason", ""), "suggest": p.get("suggest", "")}
+                for p in problems if p["file"] in all_tags],
         "tags": {f: all_tags[f] for f in files},
     }
     expected = set(files)
@@ -490,17 +344,14 @@ def _ask_sorter_fix(client, model, system_prompt, all_tags, problems):
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": json.dumps(fix_payload, ensure_ascii=False)},
     ]
-    print(f"    [sorter-fix] {len(files)} файлов", end="", flush=True)
+    print(f"    [sorter-fix] {len(files)}", end="", flush=True)
     try:
         t0 = time.time()
         chunks = []
         for part in client.chat(
             model=model, messages=messages, format=JSON_ARRAY_SCHEMA,
-            options={
-                "temperature": 0.2,
-                "num_predict": NUM_PREDICT_SORTER,
-                "num_ctx": NUM_CTX,
-            },
+            options={"temperature": 0.2, "num_predict": NUM_PREDICT_SORTER,
+                     "num_ctx": NUM_CTX},
             keep_alive="10m", stream=True,
         ):
             chunks.append(part["message"]["content"])
@@ -509,8 +360,7 @@ def _ask_sorter_fix(client, model, system_prompt, all_tags, problems):
         _timed_print(t0)
     except KeyboardInterrupt:
         raise
-    except Exception as e:
-        print(f" ERROR: {e}")
+    except Exception:
         return {}
     try:
         parsed = json.loads(content)
@@ -519,10 +369,8 @@ def _ask_sorter_fix(client, model, system_prompt, all_tags, problems):
     if not isinstance(parsed, list):
         return {}
     repaired = _repair_batch(parsed, expected)
-    ok, err = validate_paths(list(repaired.values()), expected, all_tags)
-    if not ok:
-        return {}
-    return repaired
+    ok, _ = validate_paths(list(repaired.values()), expected, all_tags)
+    return repaired if ok else {}
 
 
 # ════════════════════════════════════════════════════════════════
@@ -535,16 +383,12 @@ def _ask_validator(client, model, validator_prompt, tags, paths):
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
     ]
     try:
-        print(f"    [validator] {len(paths)} путей", end="", flush=True)
+        print(f"    [validator] {len(paths)}", end="", flush=True)
         t0 = time.time()
         chunks = []
         for part in client.chat(
             model=model, messages=messages, format=JSON_OBJECT_SCHEMA,
-            options={
-                "temperature": 0.1,
-                "num_predict": 1200,
-                "num_ctx": NUM_CTX,
-            },
+            options={"temperature": 0.1, "num_predict": 1200, "num_ctx": NUM_CTX},
             keep_alive="10m", stream=True,
         ):
             chunks.append(part["message"]["content"])
@@ -553,8 +397,7 @@ def _ask_validator(client, model, validator_prompt, tags, paths):
         _timed_print(t0)
     except KeyboardInterrupt:
         raise
-    except Exception as e:
-        print(f"    ERROR: {e}")
+    except Exception:
         return []
     try:
         parsed = json.loads(content)
@@ -571,13 +414,9 @@ def _ask_validator(client, model, validator_prompt, tags, paths):
             continue
         f = p.get("file")
         if f in tags and f in paths:
-            suggest = _sanitize_suggest(p.get("suggest", ""))
-            clean.append({
-                "file": f,
-                "current": p.get("current", paths[f]),
-                "reason": p.get("reason", ""),
-                "suggest": suggest,
-            })
+            clean.append({"file": f, "current": p.get("current", paths[f]),
+                          "reason": p.get("reason", ""),
+                          "suggest": _sanitize_suggest(p.get("suggest", ""))})
     return clean
 
 
@@ -585,7 +424,6 @@ def _sort_with_validation(client, model, sorter_prompt, validator_prompt, chunk)
     expected = set(chunk.keys())
     paths = _ask_sorter(client, model, sorter_prompt, chunk)
     paths_map = {p.split("/")[-1]: p for p in paths if p.split("/")[-1] in expected}
-
     for round_no in range(1, MAX_FIX_ROUNDS + 1):
         print(f"  ── validation round {round_no}/{MAX_FIX_ROUNDS} ──")
         problems = _ask_validator(client, model, validator_prompt, chunk, paths_map)
@@ -597,17 +435,14 @@ def _sort_with_validation(client, model, sorter_prompt, validator_prompt, chunk)
             print(f"      · {p['file']}: {p['reason']} → {p['suggest'] or '?'}")
         fixes = _ask_sorter_fix(client, model, sorter_prompt, chunk, problems)
         if not fixes:
-            print(f"    [warn] не удалось исправить")
             break
-        for fname, new_path in fixes.items():
-            paths_map[fname] = new_path
+        paths_map.update(fixes)
         print(f"    исправлено: {len(fixes)}")
-
     return paths_map
 
 
 # ════════════════════════════════════════════════════════════════
-#  Агент 3, этап 1 — структура с тегами
+#  Агент 3
 # ════════════════════════════════════════════════════════════════
 def _ask_tree_structure(client, model, prompt, folder_stats, top_categories):
     payload = {"folders": folder_stats, "top_categories": top_categories}
@@ -615,18 +450,14 @@ def _ask_tree_structure(client, model, prompt, folder_stats, top_categories):
         {"role": "system", "content": prompt},
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
     ]
-    print(f"    [tree stage 1] {len(folder_stats)} папок (с тегами)",
-          end="", flush=True)
+    print(f"    [tree stage 1] {len(folder_stats)}", end="", flush=True)
     try:
         t0 = time.time()
         chunks = []
         for part in client.chat(
             model=model, messages=messages, format=JSON_OBJECT_SCHEMA,
-            options={
-                "temperature": 0.1,
-                "num_predict": NUM_PREDICT_STRUCT,
-                "num_ctx": NUM_CTX,
-            },
+            options={"temperature": 0.1, "num_predict": NUM_PREDICT_STRUCT,
+                     "num_ctx": NUM_CTX},
             keep_alive="10m", stream=True,
         ):
             chunks.append(part["message"]["content"])
@@ -635,10 +466,8 @@ def _ask_tree_structure(client, model, prompt, folder_stats, top_categories):
         _timed_print(t0)
     except KeyboardInterrupt:
         raise
-    except Exception as e:
-        print(f" ERROR: {e}")
+    except Exception:
         return {"ok": True, "issues": []}
-
     try:
         parsed = json.loads(content)
     except json.JSONDecodeError:
@@ -648,7 +477,7 @@ def _ask_tree_structure(client, model, prompt, folder_stats, top_categories):
     raw = parsed.get("issues", [])
     if not isinstance(raw, list):
         raw = []
-    allowed = {"merge", "rename_folder", "too_specific", "split_oversized"}
+    allowed = {"merge", "rename_folder", "too_specific"}
     clean = [i for i in raw if isinstance(i, dict) and i.get("type") in allowed]
     for iss in clean:
         if iss.get("type") == "too_specific" and not iss.get("files"):
@@ -660,15 +489,10 @@ def _ask_tree_structure(client, model, prompt, folder_stats, top_categories):
     return {"ok": parsed.get("ok", not clean), "issues": clean}
 
 
-# ════════════════════════════════════════════════════════════════
-#  Агент 3, этап 2 — смысл файлов
-# ════════════════════════════════════════════════════════════════
 def _ask_tree_files(client, model, prompt, batch_paths, tegs):
     payload = {
-        "files": {
-            fname: {"path": path, "tags": tegs.get(fname, [])}
-            for fname, path in batch_paths.items()
-        }
+        "files": {fname: {"path": path, "tags": tegs.get(fname, [])}
+                  for fname, path in batch_paths.items()}
     }
     messages = [
         {"role": "system", "content": prompt},
@@ -680,12 +504,8 @@ def _ask_tree_files(client, model, prompt, batch_paths, tegs):
         chunks = []
         for part in client.chat(
             model=model, messages=messages, format=JSON_OBJECT_SCHEMA,
-            options={
-                "temperature": 0.1,
-                "num_predict": NUM_PREDICT_FILES,
-                "num_ctx": NUM_CTX,
-                "repeat_penalty": 1.15,
-            },
+            options={"temperature": 0.1, "num_predict": NUM_PREDICT_FILES,
+                     "num_ctx": NUM_CTX, "repeat_penalty": 1.15},
             keep_alive="10m", stream=True,
         ):
             chunks.append(part["message"]["content"])
@@ -694,8 +514,7 @@ def _ask_tree_files(client, model, prompt, batch_paths, tegs):
         _timed_print(t0)
     except KeyboardInterrupt:
         raise
-    except Exception as e:
-        print(f" ERROR: {e}")
+    except Exception:
         return []
     content = content.strip()
     if not content.startswith("{"):
@@ -714,10 +533,8 @@ def _ask_tree_files(client, model, prompt, batch_paths, tegs):
     for iss in raw:
         if not isinstance(iss, dict) or iss.get("type") not in allowed:
             continue
-        if iss["type"] == "misplaced_file":
-            if iss.get("file") not in batch_paths:
-                continue
-            iss["suggest"] = _sanitize_suggest(iss.get("suggest", ""))
+        if iss["type"] == "misplaced_file" and iss.get("file") not in batch_paths:
+            continue
         if iss.get("suggest"):
             iss["suggest"] = _sanitize_suggest(iss["suggest"])
         clean.append(iss)
@@ -725,7 +542,7 @@ def _ask_tree_files(client, model, prompt, batch_paths, tegs):
 
 
 # ════════════════════════════════════════════════════════════════
-#  Применение правок с защитой глубины и авто-refine
+#  Применение правок с проверкой тегов
 # ════════════════════════════════════════════════════════════════
 def _apply_tree_fixes(all_paths_map, issues, tegs):
     fixed = dict(all_paths_map)
@@ -735,12 +552,11 @@ def _apply_tree_fixes(all_paths_map, issues, tegs):
         if not folder or " " in folder:
             return False
         parts = [p for p in folder.split("/") if p]
-        if not parts:
-            return False
-        # MAX_PARTS=6 → папок может быть ≤ 5 (5 папок + файл = 6)
-        if len(parts) >= MAX_PARTS:
-            return False
-        return all(re.fullmatch(r"[A-Za-z0-9_]+", p) for p in parts)
+        return 0 < len(parts) < MAX_PARTS and all(
+            re.fullmatch(r"[A-Za-z0-9_]+", p) for p in parts)
+
+    def _same_top(a, b):
+        return bool(a and b and a.split("/")[0] == b.split("/")[0])
 
     def _rename_prefix(src, dst):
         src_p, dst_p = src + "/", dst + "/"
@@ -754,11 +570,18 @@ def _apply_tree_fixes(all_paths_map, issues, tegs):
     for iss in issues:
         t = iss.get("type")
 
+        # ── merge / rename_folder ──
         if t in ("merge", "rename_folder"):
             src = (iss.get("from") or "").strip("/")
             dst = _sanitize_suggest(iss.get("to") or "").strip("/")
             if not src or not dst or not _valid_folder(dst) or src == dst:
                 skipped.append({"issue": iss, "why": "bad from/to"})
+                continue
+            if not _same_top(src, dst):
+                skipped.append({"issue": iss, "why": "cross top-level"})
+                continue
+            if dst.startswith(src + "/"):
+                skipped.append({"issue": iss, "why": "dst inside src"})
                 continue
             n = _rename_prefix(src, dst)
             if n:
@@ -766,24 +589,7 @@ def _apply_tree_fixes(all_paths_map, issues, tegs):
             else:
                 skipped.append({"issue": iss, "why": "нет файлов"})
 
-        elif t == "move_files":
-            src_f = (iss.get("from_folder") or "").strip("/")
-            dst_f = _sanitize_suggest(iss.get("to_folder") or "").strip("/")
-            files = iss.get("files") or []
-            if not src_f or not dst_f or not _valid_folder(dst_f):
-                skipped.append({"issue": iss, "why": "bad folders"})
-                continue
-            src_p, dst_p = src_f + "/", dst_f + "/"
-            moved = 0
-            for fname in files:
-                if fname in fixed and fixed[fname].startswith(src_p):
-                    tail = fixed[fname][len(src_p):]
-                    fixed[fname] = dst_p + tail
-                    applied.append(f"move {src_f}/{tail} → {dst_f}/{tail}")
-                    moved += 1
-            if not moved:
-                skipped.append({"issue": iss, "why": "нет файлов"})
-
+        # ── too_specific ──
         elif t == "too_specific":
             target = _sanitize_suggest(iss.get("suggest") or "").strip("/")
             files = iss.get("files") or []
@@ -791,30 +597,37 @@ def _apply_tree_fixes(all_paths_map, issues, tegs):
                 skipped.append({"issue": iss, "why": "bad target"})
                 continue
             for fname in files:
-                if fname in fixed:
-                    new_path = f"{target}/{fname}"
-                    if len(new_path.split("/")) > MAX_PARTS:
-                        skipped.append({"issue": iss, "why": "too deep"})
-                        continue
-                    applied.append(f"move {fixed[fname]} → {new_path}")
-                    fixed[fname] = new_path
+                if fname not in fixed:
+                    continue
+                if not _dest_matches_top(fname, target):
+                    skipped.append({"issue": iss, "why": f"bad top {fname}"})
+                    continue
+                current = fixed[fname]
+                # Поднятие из узкой папки в родителя — разрешаем без тегов
+                is_promotion = current.startswith(target + "/")
+                if not is_promotion and not _path_matches_tags(fname, target, tegs):
+                    skipped.append({"issue": iss, "why": f"no tag match {fname}"})
+                    continue
+                new_path = f"{target}/{fname}"
+                if len(new_path.split("/")) > MAX_PARTS:
+                    skipped.append({"issue": iss, "why": "too deep"})
+                    continue
+                applied.append(f"move {current} → {new_path}")
+                fixed[fname] = new_path
 
-        elif t == "split_oversized":
-            folder = (iss.get("folder") or "").strip("/")
-            if not folder or not _valid_folder(folder):
-                skipped.append({"issue": iss, "why": "bad folder"})
-                continue
-            n = _split_one_folder(fixed, tegs, folder)
-            if n:
-                applied.append(f"split {folder}/ ({n})")
-            else:
-                skipped.append({"issue": iss, "why": "нет кандидатов"})
-
+        # ── misplaced_file ──
         elif t == "misplaced_file":
             fname = iss.get("file")
             target = _sanitize_suggest(iss.get("suggest") or "").strip("/")
             if fname not in fixed or not target or not _valid_folder(target):
                 skipped.append({"issue": iss, "why": "bad file/target"})
+                continue
+            if not _dest_matches_top(fname, target):
+                skipped.append({"issue": iss, "why": "bad top"})
+                continue
+            # Проверка тегов для не-кода
+            if not _is_code_file(fname) and not _path_matches_tags(fname, target, tegs):
+                skipped.append({"issue": iss, "why": "no tag match"})
                 continue
             new_path = f"{target}/{fname}"
             if len(new_path.split("/")) > MAX_PARTS:
@@ -824,77 +637,53 @@ def _apply_tree_fixes(all_paths_map, issues, tegs):
                 applied.append(f"move {fixed[fname]} → {new_path}")
                 fixed[fname] = new_path
 
+        # ── inconsistent ──
         elif t == "inconsistent":
             target = _sanitize_suggest(iss.get("suggest") or "").strip("/")
             folders = iss.get("folders") or []
             if not target or not folders or not _valid_folder(target):
-                skipped.append({"issue": iss, "why": "bad target/folders"})
+                skipped.append({"issue": iss, "why": "bad target"})
+                continue
+            target_top = target.split("/")[0]
+            # Все src должны быть в одном top с target
+            if not all(f.strip("/").split("/")[0] == target_top
+                       for f in folders if f.strip("/")):
+                skipped.append({"issue": iss, "why": "cross top-level"})
+                continue
+            affected = [f for f, p in fixed.items()
+                        if any(p.startswith(fd.strip("/") + "/") for fd in folders)]
+            # Проверка тегов
+            if not all(_path_matches_tags(f, target, tegs) for f in affected):
+                skipped.append({"issue": iss, "why": "no tag match"})
                 continue
             for src in folders:
                 src = src.strip("/")
-                if src == target:
-                    continue
-                n = _rename_prefix(src, target)
-                if n:
-                    applied.append(f"inconsistent {src}/ → {target}/ ({n})")
+                if src != target and _rename_prefix(src, target):
+                    applied.append(f"inconsistent {src}/ → {target}/")
 
-    # ═══ Валидация: при ошибке откат ═══
     ok, err = validate_paths(list(fixed.values()), set(tegs.keys()), tegs)
     if not ok:
         print(f"    [tree-fix] сломали формат ({err}) — откат")
         return dict(all_paths_map), [], [{"why": f"rollback: {err}"}]
 
-    # ═══ Защита: детерминированные правила для кода всегда побеждают ═══
     if applied:
-        refined = _refine_programming_paths(fixed, tegs, silent=True)
+        refined = _refine_programming_paths(fixed, silent=True)
         if refined:
-            applied.append(f"refine после правок: {refined}")
+            applied.append(f"refine: {refined}")
             ok2, err2 = validate_paths(list(fixed.values()), set(tegs.keys()), tegs)
             if not ok2:
-                print(f"    [tree-fix] refine сломал ({err2}) — откат")
-                return dict(all_paths_map), [], [{"why": f"rollback after refine: {err2}"}]
+                return dict(all_paths_map), [], [{"why": f"rollback: {err2}"}]
 
     return fixed, applied, skipped
 
 
-def _split_one_folder(all_paths_map, tegs, folder):
-    files = [f for f, p in all_paths_map.items()
-             if "/".join(p.split("/")[:-1]) == folder]
-    if len(files) <= SPLIT_THRESHOLD:
-        return 0
-    if len(folder.split("/")) >= MAX_PARTS - 1:
-        return 0
-    moves = {}
-    for fname in files:
-        tags = tegs.get(fname, [])
-        sub = classify_by_split_rules(tags)
-        if sub:
-            moves[fname] = f"{folder}/{sub}/{fname}"
-        else:
-            lang = language_subfolder(fname)
-            if lang:
-                moves[fname] = f"{folder}/{lang}/{fname}"
-    if not moves:
-        return 0
-    sub_count = Counter("/".join(p.split("/")[:-1]) for p in moves.values())
-    if len(sub_count) < 2:
-        return 0
-    for fname, new_path in moves.items():
-        all_paths_map[fname] = new_path
-    return len(moves)
-
-
-# ════════════════════════════════════════════════════════════════
-#  Двух-этапная проверка дерева
-# ════════════════════════════════════════════════════════════════
 def _tree_validation_staged(client, model, structure_prompt, files_prompt,
                              all_paths_map, tegs):
     total_issues = 0
-
     folder_stats = _build_folder_stats(all_paths_map, tegs)
     top_cats = sorted({p.split("/")[0] for p in all_paths_map.values()})
 
-    print(f"\n  [этап 1/2] структура (с тегами)")
+    print(f"\n  [этап 1/2] структура")
     struct = _ask_tree_structure(client, model, structure_prompt,
                                   folder_stats, top_cats)
     struct_issues = struct.get("issues", [])
@@ -905,11 +694,9 @@ def _tree_validation_staged(client, model, structure_prompt, files_prompt,
         for iss in struct_issues:
             if iss.get("type") == "too_specific" and not iss.get("files"):
                 folder = (iss.get("folder") or "").strip("/") + "/"
-                iss["files"] = [fname for fname, path in all_paths_map.items()
-                                if path.startswith(folder)]
-        fixed_map, applied, skipped = _apply_tree_fixes(
-            all_paths_map, struct_issues, tegs
-        )
+                iss["files"] = [f for f, p in all_paths_map.items()
+                                if p.startswith(folder)]
+        fixed_map, applied, _ = _apply_tree_fixes(all_paths_map, struct_issues, tegs)
         if applied:
             print(f"    ✓ применено: {len(applied)}")
             for line in applied[:10]:
@@ -919,38 +706,27 @@ def _tree_validation_staged(client, model, structure_prompt, files_prompt,
     else:
         print(f"    ✓ структура в порядке")
 
-    print(f"\n  [этап 2/2] смысл файлов (с тегами)")
+    print(f"\n  [этап 2/2] смысл файлов")
     items = list(all_paths_map.items())
     batches = [items[i:i + TREE_FILE_BATCH]
                for i in range(0, len(items), TREE_FILE_BATCH)]
     print(f"    батчей: {len(batches)}")
-
     all_file_issues = []
-    skipped_batches = 0
     for idx, batch in enumerate(batches, 1):
         print(f"    [{idx}/{len(batches)}]", end="")
         try:
-            batch_paths = dict(batch)
-            issues = _ask_tree_files(client, model, files_prompt,
-                                      batch_paths, tegs)
-            all_file_issues.extend(issues)
+            all_file_issues.extend(
+                _ask_tree_files(client, model, files_prompt, dict(batch), tegs))
         except KeyboardInterrupt:
             raise
         except Exception as e:
             print(f"      [skip] {e}")
-            skipped_batches += 1
-            continue
-
-    if skipped_batches:
-        print(f"    [warn] пропущено батчей: {skipped_batches}")
 
     if all_file_issues:
         print(f"    ✗ проблем: {len(all_file_issues)}")
         for iss in all_file_issues[:10]:
             print(f"      · {iss.get('type')}: {iss.get('reason', '')}")
-        fixed_map, applied, skipped = _apply_tree_fixes(
-            all_paths_map, all_file_issues, tegs
-        )
+        fixed_map, applied, _ = _apply_tree_fixes(all_paths_map, all_file_issues, tegs)
         if applied:
             print(f"    ✓ применено: {len(applied)}")
             for line in applied[:10]:
@@ -959,29 +735,61 @@ def _tree_validation_staged(client, model, structure_prompt, files_prompt,
         total_issues += len(all_file_issues)
     else:
         print(f"    ✓ смысл в порядке")
-
     return all_paths_map, total_issues
 
 
 # ════════════════════════════════════════════════════════════════
-#  Детерминированный fallback
+#  Retry: файлы с плохим путём → переспросить у агента 1
 # ════════════════════════════════════════════════════════════════
-def apply_deterministic_fallback(all_paths, tegs):
-    fixed = []
-    fixed_count = 0
-    for path in all_paths:
-        parts = path.split("/")
-        name, top = parts[-1], parts[0]
-        if tegs.get(name) and top in ("Other", "Unsorted"):
-            category = classify_by_tags(tegs[name])
-            if category:
-                new_path = f"{category}/{name}"
-                print(f"  [fallback] {path} → {new_path}")
-                fixed.append(new_path)
-                fixed_count += 1
+def _needs_retry(fname, path, tegs):
+    if not tegs.get(fname):
+        return False
+    top = path.split("/")[0]
+    if top in ("Other", "Unsorted") or top not in WHITELIST_ROOTS:
+        return True
+    if _is_code_file(fname):
+        return not path.startswith("Technology/Programming/")
+    return not _path_matches_tags(fname, "/".join(path.split("/")[:-1]), tegs)
+
+
+def _retry_unresolved(client, model, base_prompt, all_paths_map, tegs):
+    candidates = {f: tegs[f] for f, p in all_paths_map.items()
+                  if _needs_retry(f, p, tegs)}
+    if not candidates:
+        return 0
+
+    hint_prompt = base_prompt + (
+        "\n\n━━━ ВАЖНО ━━━\n"
+        "У всех файлов ниже ЕСТЬ теги. НЕ ИСПОЛЬЗУЙ Other и НЕ ИСПОЛЬЗУЙ Unsorted.\n"
+        "Выбери подходящую категорию из whitelist. Для кода — Technology/Programming/<тема>/file.\n"
+        "Категория должна ОТРАЖАТЬ теги: если в тегах 'landscape' — должно быть Landscape в пути."
+    )
+
+    items = list(candidates.items())
+    batches = [items[i:i + BATCH_SIZE] for i in range(0, len(items), BATCH_SIZE)]
+    print(f"[retry unresolved] файлов: {len(candidates)}, батчей: {len(batches)}")
+
+    fixed = 0
+    for idx, batch in enumerate(batches, 1):
+        chunk = dict(batch)
+        expected = set(chunk.keys())
+        print(f"  [{idx}/{len(batches)}]", end="")
+        try:
+            paths = _ask_sorter(client, model, hint_prompt, chunk)
+        except KeyboardInterrupt:
+            raise
+        except Exception as e:
+            print(f"  [skip] {e}")
+            continue
+        for p in paths:
+            fname = p.split("/")[-1]
+            if fname not in expected:
                 continue
-        fixed.append(path)
-    print(f"[fallback] восстановлено: {fixed_count}")
+            top = p.split("/")[0]
+            if top not in ("Other", "Unsorted") and top in WHITELIST_ROOTS:
+                all_paths_map[fname] = p
+                fixed += 1
+    print(f"\n[retry unresolved] исправлено: {fixed}/{len(candidates)}")
     return fixed
 
 
@@ -997,7 +805,6 @@ def Teg_analyse(programm_path):
 
     with open(base / "tegs.json", "r", encoding="utf-8") as f:
         tegs = json.load(f)
-
     if not tegs:
         _safe_dump(base / "new_paths.json", [])
         print("[]")
@@ -1006,7 +813,7 @@ def Teg_analyse(programm_path):
     client = Client(timeout=CLIENT_TIMEOUT)
     items = list(tegs.items())
     batches = [items[i:i + BATCH_SIZE] for i in range(0, len(items), BATCH_SIZE)]
-    print(f"Всего файлов: {len(items)}, батчей: {len(batches)} (размер {BATCH_SIZE})")
+    print(f"Всего файлов: {len(items)}, батчей: {len(batches)}")
 
     all_paths_map = {}
     start_total = time.time()
@@ -1014,15 +821,14 @@ def Teg_analyse(programm_path):
     try:
         for idx, batch in enumerate(batches, 1):
             chunk = dict(batch)
-            print(f"\n═══ Батч {idx}/{len(batches)} — {len(chunk)} файлов ═══")
+            print(f"\n═══ Батч {idx}/{len(batches)} — {len(chunk)} ═══")
             result = _sort_with_validation(
-                client, "qwen2.5:7b", sorter_prompt, validator_prompt, chunk
-            )
+                client, "qwen2.5:7b", sorter_prompt, validator_prompt, chunk)
             all_paths_map.update(result)
             _safe_dump(base / "new_paths.json",
                        [all_paths_map[f] for f in tegs if f in all_paths_map])
     except KeyboardInterrupt:
-        print("\n\n[!] Прервано. Сохраняю готовое.")
+        print("\n[!] Прервано.")
         _safe_dump(base / "new_paths.json",
                    [all_paths_map[f] for f in tegs if f in all_paths_map])
         return list(all_paths_map.values())
@@ -1031,47 +837,36 @@ def Teg_analyse(programm_path):
         if f not in all_paths_map:
             all_paths_map[f] = f"Other/{f}"
 
-    print("\n[deterministic fallback]")
-    ordered = [all_paths_map[f] for f in tegs]
-    ordered = apply_deterministic_fallback(ordered, tegs)
-    for f, p in zip(tegs, ordered):
-        all_paths_map[f] = p
+    print("\n[retry unresolved]")
+    _retry_unresolved(client, "qwen2.5:7b", sorter_prompt, all_paths_map, tegs)
+    _safe_dump(base / "new_paths.json", [all_paths_map[f] for f in tegs])
 
     print("\n[refine programming paths]")
-    t_ref = time.time()
-    n = _refine_programming_paths(all_paths_map, tegs)
-    _timed_print(t_ref, f", переложено {n}")
-    _safe_dump(base / "new_paths.json",
-               [all_paths_map[f] for f in tegs])
+    t = time.time()
+    n = _refine_programming_paths(all_paths_map)
+    _timed_print(t, f", {n}")
+    _safe_dump(base / "new_paths.json", [all_paths_map[f] for f in tegs])
 
-    print("\n[split oversized folders]")
-    t_split = time.time()
-    moved = _split_oversized_folders(all_paths_map, tegs, SPLIT_THRESHOLD)
-    _timed_print(t_split, f", перемещено {moved}")
-    _safe_dump(base / "new_paths.json",
-               [all_paths_map[f] for f in tegs])
-
-    print("\n═══ Tree validation (staged, all agents see tags) ═══")
+    print("\n═══ Tree validation ═══")
     for round_no in range(1, MAX_TREE_ROUNDS + 1):
         print(f"\n[tree round {round_no}/{MAX_TREE_ROUNDS}]")
-        t0 = time.time()
+        t = time.time()
         all_paths_map, issues_count = _tree_validation_staged(
-            client, "qwen2.5:7b",
-            structure_prompt, files_prompt,
-            all_paths_map, tegs,
-        )
-        _safe_dump(base / "new_paths.json",
-                   [all_paths_map[f] for f in tegs])
-        _timed_print(t0, " round time")
+            client, "qwen2.5:7b", structure_prompt, files_prompt,
+            all_paths_map, tegs)
+        _safe_dump(base / "new_paths.json", [all_paths_map[f] for f in tegs])
+        _timed_print(t, " round")
         if issues_count == 0:
-            print(f"  ✓ дерево логично")
+            print(f"  ✓ логично")
             break
         print(f"  → issues: {issues_count}")
 
+    print("\n[final retry unresolved]")
+    _retry_unresolved(client, "qwen2.5:7b", sorter_prompt, all_paths_map, tegs)
+
     print("\n[final refine]")
-    _refine_programming_paths(all_paths_map, tegs)
-    _safe_dump(base / "new_paths.json",
-               [all_paths_map[f] for f in tegs])
+    _refine_programming_paths(all_paths_map)
+    _safe_dump(base / "new_paths.json", [all_paths_map[f] for f in tegs])
 
     final = [all_paths_map[f] for f in tegs]
     ok, err = validate_paths(final, set(tegs.keys()), tegs)
@@ -1081,14 +876,13 @@ def Teg_analyse(programm_path):
 
     others = sum(1 for p in final if p.split("/")[0] == "Other")
     unsorted = sum(1 for p in final if p.split("/")[0] == "Unsorted")
-    total_time = time.time() - start_total
     print(f"\nГотово: {len(final)}, Other/: {others}, Unsorted/: {unsorted}")
-    print(f"Время: {total_time:.0f}с")
+    print(f"Время: {time.time() - start_total:.0f}с")
     print(json.dumps(final, ensure_ascii=False, indent=2))
     return final
 
 
 if __name__ == "__main__":
     Teg_analyse(
-        r"C:\Users\Матвей\Documents\GitHub\AI-File-Sorter\src\agent\directory_agent"
+        r"C:\Users\MSI\Documents\GitHub\AI-File-Sorter\src\agent\directory_agent"
     )
